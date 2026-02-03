@@ -11,5 +11,7 @@ output/
 data/
 *.tex
 *.pdf
-*.png
 *.log
+# Keep sign.png but ignore other images
+logo*.png
+temp*.png
