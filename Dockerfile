@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libgraphite2-3 \
     libharfbuzz0b \
-    libicu72 \
+    libicu-dev \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
