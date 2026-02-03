@@ -183,10 +183,15 @@ function Dashboard() {
                 </div>
               </div>
               <div className="detail-header-right">
-                <button className="btn-secondary">
+                <a 
+                  href={selectedApp.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn-secondary"
+                >
                   <Eye size={14} />
                   Voir l'offre
-                </button>
+                </a>
                 <span className={`status-badge status-${selectedApp.status}`}>
                   {statusConfig[selectedApp.status].label}
                 </span>
