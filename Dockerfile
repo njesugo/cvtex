@@ -7,11 +7,18 @@ RUN apt-get update && apt-get install -y \
     fontconfig \
     libfontconfig1 \
     libssl-dev \
+    libgraphite2-3 \
+    libharfbuzz0b \
+    libicu72 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Tectonic
-RUN curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net | sh \
-    && mv tectonic /usr/local/bin/
+# Install Tectonic from GitHub releases (pre-built binary)
+RUN curl -L -o /tmp/tectonic.tar.gz https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.15.0/tectonic-0.15.0-x86_64-unknown-linux-gnu.tar.gz \
+    && tar -xzf /tmp/tectonic.tar.gz -C /usr/local/bin \
+    && chmod +x /usr/local/bin/tectonic \
+    && rm /tmp/tectonic.tar.gz \
+    && tectonic --version
 
 # Set working directory
 WORKDIR /app
