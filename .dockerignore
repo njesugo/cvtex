@@ -1,0 +1,15 @@
+# Ignore files for Docker build
+.venv/
+__pycache__/
+*.pyc
+.env
+.git/
+.gitignore
+frontend/node_modules/
+frontend/dist/
+output/
+data/
+*.tex
+*.pdf
+*.png
+*.log

@@ -1,0 +1,173 @@
+\documentclass[a4paper,10pt]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[sfdefault]{roboto}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{fontawesome5}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{parskip}
+
+% Page geometry
+\geometry{left=0.5cm, right=0.8cm, top=0.4cm, bottom=0.4cm}
+
+% Colors
+\definecolor{maingreen}{RGB}{76, 175, 130}
+\definecolor{darkgreen}{RGB}{60, 140, 105}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+\definecolor{textgray}{RGB}{80, 80, 80}
+
+% Remove page numbers
+\pagestyle{empty}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=maingreen,
+    urlcolor=maingreen
+}
+
+% Custom section command
+\newcommand{\cvsection}[1]{%
+    \vspace{5pt}
+    \noindent\colorbox{maingreen}{%
+        \parbox{\dimexpr\linewidth-2\fboxsep}{%
+            \textcolor{white}{\textbf{\normalsize #1}}%
+        }%
+    }%
+    \vspace{4pt}
+}
+
+% Custom subsection for experiences
+\newcommand{\cventry}[4]{%
+    \noindent\textbf{#1}\\
+    \textit{\small\textcolor{textgray}{#2}} \hfill \textcolor{textgray}{\small #3}\\
+    #4
+    \vspace{2pt}
+}
+
+% Competence line
+\newcommand{\competence}[2]{%
+    \noindent\textbf{\small #1:} {\small #2}\\[1pt]
+}
+
+% Certification item
+\newcommand{\certification}[1]{%
+    \textcolor{maingreen}{\textbullet} {\small #1}\\[1pt]
+}
+
+\begin{document}
+
+% Left green bar
+\begin{tikzpicture}[remember picture, overlay]
+    \fill[maingreen] (current page.north west) rectangle ([xshift=0.3cm]current page.south west);
+\end{tikzpicture}
+
+% Header
+\begin{center}
+    {\LARGE\textbf{Jesugo Aubin Nounagnon}}\\[3pt]
+    {\normalsize\textcolor{maingreen}{Data Engineer}}\\[4pt]
+    {\small\textcolor{textgray}{%
+        \faEnvelope\ jesugonounagnon@gmail.com \quad
+        \faPhone\ +33 6 01 89 59 60 \quad
+        \faMapMarker\ Paris
+    }}
+\end{center}
+
+\vspace{4pt}
+
+% Introduction
+{\small\noindent\textcolor{textgray}{%
+Avec un parcours riche en programmation/développement et spécialisé en data, notamment en data gouvernance et en data engineering, je cherche une nouvelle opportunité pour mettre en pratique mes expériences et connaissances acquises, afin de relever de nouveaux défis.
+}}
+
+% EXPERIENCES
+\cvsection{EXPÉRIENCES}
+\cventry{Data Engineer}
+{LEROY MERLIN - GROUP ADEO}
+{Août. 2025 - Septembre. 2026}
+{%
+\begin{itemize}[leftmargin=*, noitemsep, topsep=0pt]
+    \item Maîtrise avancée de BigQuery : optimisation des requêtes, structuration des tables, gestion des coûts.
+    \item Infrastructure as Code : une expérience avec Terraform
+    \item Connaissance pratique de GCP et de ses services (Compute, Storage, Networking, Dataflow, Composer/Airflow, Vertex AI)
+\end{itemize}
+}
+
+\cventry{Data Steward - Data Gouvernance}
+{LEROY MERLIN - GROUP ADEO}
+{Sept. 2024 - Juil. 2025}
+{%
+\begin{itemize}[leftmargin=*, noitemsep, topsep=0pt]
+    \item Piloté la gouvernance des données Accounting to Cash chez ADEO Service
+    \item Collaborer avec plus de 15 parties prenantes (Data Owner, Process Métier, Product Owner) pour améliorer l’accessibilité et la compréhension aux données
+    \item Mis en place et suivi des contrôles de Data Quality (cohérence, doublons, valeurs manquantes/obsolètes) via la Data Quality Platform et des tableaux de suivi, avec un reporting régulier aux parties prenantes. 
+\end{itemize}
+}
+
+\cventry{Data Scientist - Bootcamp}
+{iSHEERO}
+{Mars 2023 - Juin 2024}
+{%
+\begin{itemize}[leftmargin=*, noitemsep, topsep=0pt]
+    \item Intégré un modèle NLI basé sur Google BERT via Hugging Face : préparation des données, définition du pipeline d’inférence.
+    \item Déploiement du modèle (API Rest avec Flask)
+\end{itemize}
+}
+
+% FORMATIONS
+\cvsection{FORMATIONS}
+\cventry{Cycle Ingénieur - Big Data \& Machine Learning}
+{EFREI Paris, Paris}
+{Sept. 2024 - Août 2026}
+{}
+
+\cventry{CPGE - MPSI}
+{Institut de Mathématiques et Sciences Physiques, IMSP Bénin}
+{Sept. 2019 - Juin 2021}
+{}
+
+% COMPETENCES
+\cvsection{COMPÉTENCES}
+\competence{Web Development}{Flask, NextJs, React, TailwindCss}
+\competence{Databases}{BigQuery, SQL, NoSQL, PostgreSQL, MongoDB}
+\competence{Programming Languages}{Python, Java, Bash Scripting}
+\competence{Data Engineering}{Terraform, ETL/ELT, Data Pipelines, Airflow, Kafka}
+\competence{Cloud Platforms}{Google Cloud Platform (GCP), Big Query}
+\competence{Data Tools}{Excel, Power BI, Tableau Desktop, Data Visualisation, Modélisation UML, Modélisation de Base de données}
+\competence{Soft Skills}{Agile, Adaptabilité, Proactif, Esprit d'équipe, Capacité d'analyse, Data-driven, Statistiques, Problem Solving, Design Thinking}
+
+% CERTIFICATIONS
+\cvsection{CERTIFICATIONS}
+\certification{Microsoft Certified: Azure AI Fundamentals (AI-900) (Juin 2025)}
+\certification{Databases and SQL for Data Science - IBM on Coursera (Mars 2024)}
+\certification{ETL and Data Pipelines with Shell, Airflow and Kafka - IBM on Coursera (Mars 2024)}
+\certification{Relational Database Administration (DBA) - IBM on Coursera (Mars 2024)}
+\certification{Data Warehousing and BI Analytics Essentials - IBM on Coursera (Mars 2024)}
+
+% LANGUES et CENTRES D'INTERET - 2 colonnes
+\noindent
+\begin{minipage}[t]{0.48\linewidth}
+\cvsection{LANGUES}
+\vspace{-2pt}
+\certification{\small Français - Langue Maternelle}
+\certification{\small Anglais Écrit -  Niveau Académique}
+\certification{\small Anglais Conversationel - Niveau Professionel}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\cvsection{CENTRES D'INTÉRÊT}
+\vspace{-2pt}
+\certification{\small Photo Pro (Sur mes temps morts)}
+\certification{\small Arts}
+\certification{\small Football}
+\end{minipage}
+
+\end{document}
