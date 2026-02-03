@@ -1,0 +1,20 @@
+# Environnement Python
+.venv/
+__pycache__/
+*.pyc
+
+# Fichiers de configuration sensibles
+.env
+
+# Fichiers de sortie générés
+output/
+
+# Fichiers LaTeX temporaires
+*.aux
+*.log
+*.out
+*.synctex.gz
+
+# IDE
+.vscode/
+.idea/

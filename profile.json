@@ -1,0 +1,200 @@
+{
+  "personal": {
+    "name": "Jesugo Aubin Nounagnon",
+    "email": "jesugonounagnon@gmail.com",
+    "phone": "+33 6 01 89 59 60",
+    "location": "Paris",
+    "linkedin": "",
+    "github": ""
+  },
+  "titles": [
+    "Data Engineer",
+    "Data Scientist",
+    "Data Steward",
+    "Data Analyst",
+    "ML Engineer",
+    "BI Developer"
+  ],
+  "summary_templates": {
+    "data_engineer": "Ingénieur Data avec une solide expérience en conception de pipelines ETL/ELT, optimisation BigQuery et infrastructure cloud (GCP, Terraform). Passionné par l'industrialisation des flux de données et la qualité des données.",
+    "data_scientist": "Data Scientist avec une expertise en Machine Learning et NLP. Expérience en déploiement de modèles (API Flask, Hugging Face) et en analyse statistique avancée.",
+    "data_steward": "Spécialiste en gouvernance des données avec une expertise en data quality, catalogage et collaboration transverse. Expérience en définition de règles métier et contrôles qualité.",
+    "data_analyst": "Analyste Data avec une maîtrise des outils de visualisation (Power BI, Tableau) et une forte capacité d'analyse statistique. Expert SQL et Python.",
+    "default": "Avec un parcours riche en programmation/développement et spécialisé en data, notamment en data gouvernance et en data engineering, je cherche une nouvelle opportunité pour mettre en pratique mes expériences et connaissances acquises, afin de relever de nouveaux défis."
+  },
+  "experiences": [
+    {
+      "id": "exp_data_engineer",
+      "title": "Data Engineer",
+      "company": "LEROY MERLIN - GROUP ADEO",
+      "period": "Août 2025 - Septembre 2026",
+      "keywords": ["bigquery", "gcp", "terraform", "airflow", "dataflow", "vertex ai", "cloud", "pipeline", "etl", "infrastructure"],
+      "bullets": [
+        "Maîtrise avancée de BigQuery : optimisation des requêtes, structuration des tables, gestion des coûts",
+        "Infrastructure as Code avec Terraform pour automatiser les déploiements",
+        "Connaissance pratique de GCP et de ses services (Compute, Storage, Networking, Dataflow, Composer/Airflow, Vertex AI)",
+        "Conception et maintenance de pipelines de données robustes et scalables",
+        "Monitoring et alerting des flux de données en production"
+      ],
+      "priority": 1
+    },
+    {
+      "id": "exp_data_steward",
+      "title": "Data Steward - Data Gouvernance",
+      "company": "LEROY MERLIN - GROUP ADEO",
+      "period": "Sept. 2024 - Juil. 2025",
+      "keywords": ["gouvernance", "data quality", "qualité", "steward", "métadonnées", "catalog", "conformité", "rgpd", "stakeholder", "process"],
+      "bullets": [
+        "Piloté la gouvernance des données Accounting to Cash chez ADEO Service",
+        "Collaborer avec plus de 15 parties prenantes (Data Owner, Process Métier, Product Owner) pour améliorer l'accessibilité et la compréhension aux données",
+        "Mis en place et suivi des contrôles de Data Quality (cohérence, doublons, valeurs manquantes/obsolètes) via la Data Quality Platform",
+        "Création de tableaux de suivi avec reporting régulier aux parties prenantes",
+        "Documentation et catalogage des assets data de l'entreprise"
+      ],
+      "priority": 2
+    }
+  ],
+  "education": [
+    {
+      "id": "edu_efrei",
+      "title": "Cycle Ingénieur - Big Data & Machine Learning",
+      "school": "EFREI Paris, Paris",
+      "period": "Sept. 2024 - Août 2026",
+      "keywords": ["ingénieur", "big data", "machine learning", "master", "bac+5"]
+    },
+    {
+      "id": "edu_cpge",
+      "title": "CPGE - MPSI",
+      "school": "Institut de Mathématiques et Sciences Physiques, IMSP Bénin",
+      "period": "Sept. 2019 - Juin 2021",
+      "keywords": ["prépa", "mathématiques", "physique", "cpge"]
+    }
+  ],
+  "skills": {
+    "web_development": {
+      "label": "Web Development",
+      "items": ["Flask", "NextJs", "React", "TailwindCss", "FastAPI", "Django"],
+      "keywords": ["web", "frontend", "backend", "api", "rest"]
+    },
+    "databases": {
+      "label": "Databases",
+      "items": ["BigQuery", "SQL", "NoSQL", "PostgreSQL", "MongoDB", "MySQL", "Redis", "Elasticsearch"],
+      "keywords": ["base de données", "sql", "nosql", "bdd", "database"]
+    },
+    "programming": {
+      "label": "Programming Languages",
+      "items": ["Python", "Java", "Bash Scripting", "R", "Scala", "Go"],
+      "keywords": ["programmation", "code", "développement", "scripting"]
+    },
+    "data_engineering": {
+      "label": "Data Engineering",
+      "items": ["Terraform", "ETL/ELT", "Data Pipelines", "Airflow", "Kafka", "Spark", "dbt", "Dataflow", "Pub/Sub"],
+      "keywords": ["etl", "pipeline", "ingestion", "orchestration", "streaming", "batch"]
+    },
+    "cloud": {
+      "label": "Cloud Platforms",
+      "items": ["Google Cloud Platform (GCP)", "BigQuery", "AWS", "Azure", "Kubernetes", "Docker"],
+      "keywords": ["cloud", "gcp", "aws", "azure", "devops", "container"]
+    },
+    "data_tools": {
+      "label": "Data Tools",
+      "items": ["Excel", "Power BI", "Tableau Desktop", "Data Visualisation", "Modélisation UML", "Modélisation de Base de données", "Looker", "Metabase"],
+      "keywords": ["visualisation", "bi", "dashboard", "reporting", "analytics"]
+    },
+    "soft_skills": {
+      "label": "Soft Skills",
+      "items": ["Agile", "Adaptabilité", "Proactif", "Esprit d'équipe", "Capacité d'analyse", "Data-driven", "Problem Solving", "Design Thinking", "Communication"],
+      "keywords": ["soft", "équipe", "agile", "communication"]
+    },
+    "ml_ai": {
+      "label": "Machine Learning & AI",
+      "items": ["Scikit-learn", "TensorFlow", "PyTorch", "Hugging Face", "NLP", "Deep Learning", "MLOps", "Vertex AI"],
+      "keywords": ["machine learning", "ml", "ia", "ai", "deep learning", "nlp", "modèle"]
+    }
+  },
+  "certifications": [
+    {
+      "name": "Microsoft Certified: Azure AI Fundamentals (AI-900)",
+      "date": "Juin 2025",
+      "keywords": ["azure", "ai", "microsoft", "cloud", "ia"]
+    },
+    {
+      "name": "Databases and SQL for Data Science - IBM on Coursera",
+      "date": "Mars 2024",
+      "keywords": ["sql", "database", "ibm", "data science"]
+    },
+    {
+      "name": "ETL and Data Pipelines with Shell, Airflow and Kafka - IBM on Coursera",
+      "date": "Mars 2024",
+      "keywords": ["etl", "airflow", "kafka", "pipeline", "ibm"]
+    },
+    {
+      "name": "Relational Database Administration (DBA) - IBM on Coursera",
+      "date": "Mars 2024",
+      "keywords": ["dba", "database", "administration", "ibm"]
+    },
+    {
+      "name": "Data Warehousing and BI Analytics Essentials - IBM on Coursera",
+      "date": "Mars 2024",
+      "keywords": ["data warehouse", "bi", "analytics", "ibm"]
+    }
+  ],
+  "languages": [
+    {"name": "Français", "level": "Langue Maternelle"},
+    {"name": "Anglais Écrit", "level": "Niveau Académique"},
+    {"name": "Anglais Conversationnel", "level": "Niveau Professionnel"}
+  ],
+  "interests": ["Photo Pro (Sur mes temps morts)", "Arts", "Football"],
+  
+  "accroches": [
+    {
+      "type": "data_engineer",
+      "text": "Après avoir conçu des pipelines de données traitant plusieurs millions d'enregistrements quotidiens chez ADEO (Leroy Merlin), je suis convaincu que la data industrialisée est le moteur de la croissance des entreprises.",
+      "keywords": ["pipeline", "etl", "data engineer", "bigquery", "gcp"]
+    },
+    {
+      "type": "data_quality",
+      "text": "En tant que Data Steward chez ADEO, j'ai collaboré avec plus de 15 parties prenantes pour mettre en place des contrôles de qualité des données qui ont transformé la confiance des équipes métier envers leurs données.",
+      "keywords": ["gouvernance", "quality", "steward", "qualité"]
+    },
+    {
+      "type": "ml_ai",
+      "text": "J'ai intégré et déployé un modèle NLI basé sur Google BERT en production via une API REST, prouvant ma capacité à aller du prototype à l'industrialisation.",
+      "keywords": ["machine learning", "ml", "ia", "ai", "nlp", "bert", "modèle"]
+    },
+    {
+      "type": "default",
+      "text": "Passionné par la data depuis mes années de prépa MPSI, j'ai construit un parcours alliant rigueur mathématique et expertise technique pour transformer les données en valeur métier.",
+      "keywords": []
+    }
+  ],
+  
+  "qualites": [
+    "Rigueur et souci du détail",
+    "Capacité à vulgariser des sujets techniques",
+    "Proactivité et autonomie",
+    "Esprit d'équipe et collaboration transverse",
+    "Curiosité et veille technologique permanente"
+  ],
+  
+  "projets_marquants": [
+    {
+      "titre": "Pipelines BigQuery chez ADEO",
+      "description": "Conception de pipelines ETL robustes entre le Data Warehouse et les outils internes, avec optimisation des coûts et des performances.",
+      "impact": "Réduction de 40% des coûts BigQuery",
+      "keywords": ["bigquery", "etl", "pipeline", "gcp"]
+    },
+    {
+      "titre": "Gouvernance Data Quality",
+      "description": "Mise en place d'une stratégie de contrôle qualité sur le périmètre Accounting to Cash.",
+      "impact": "Collaboration avec +15 parties prenantes",
+      "keywords": ["gouvernance", "quality", "steward"]
+    },
+    {
+      "titre": "Déploiement modèle BERT",
+      "description": "Intégration et déploiement d'un modèle NLI en production via API REST Flask.",
+      "impact": "Modèle accessible en temps réel",
+      "keywords": ["bert", "nlp", "flask", "api", "ml"]
+    }
+  ]
+}
