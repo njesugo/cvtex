@@ -42,7 +42,13 @@ app = FastAPI(title="CVTeX API", version="2.0.0")
 # CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "https://*.vercel.app"],
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://127.0.0.1:5173", 
+        "https://cvtex.vercel.app",
+        "https://cvtex-jjrs-projects-0dc738ef.vercel.app",
+        "https://cvtex-git-main-jjrs-projects-0dc738ef.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
