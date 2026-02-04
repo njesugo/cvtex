@@ -625,24 +625,45 @@ def fetch_job_offer(url: str) -> dict:
     
     # Détection spéciale Welcome to the Jungle
     if "welcometothejungle" in url:
-        # Extraire depuis l'URL: /companies/{company}/jobs/{job-title}
+        # Extraire depuis l'URL: /companies/{company}/jobs/{job-title}_{city}_{COMPANY}_{id}
         import re
         match = re.search(r'/companies/([^/]+)/jobs/([^/?]+)', url)
         if match:
             job_data["company"] = match.group(1).replace('-', ' ').title()
-            raw_title = match.group(2)
-            # Nettoyer le titre : enlever les suffixes comme _OBAT_OlRake0, _paris, etc.
-            raw_title = re.sub(r'_[A-Z]{2,}_[A-Za-z0-9]+$', '', raw_title)  # Enlever _OBAT_OlRake0
-            raw_title = raw_title.replace('-', ' ').replace('_', ' ')
-            # Extraire la ville à la fin avant de la nettoyer
-            city_match = re.search(r'\s+(paris|lyon|marseille|bordeaux|lille|nantes|toulouse|rennes|strasbourg|montpellier|nice|remote)\s*$', raw_title, flags=re.IGNORECASE)
-            if city_match:
-                job_data["location"] = city_match.group(1).title()
-            raw_title = re.sub(r'\s+(paris|lyon|marseille|bordeaux|lille|nantes|toulouse|rennes|strasbourg|montpellier|nice|remote)\s*$', '', raw_title, flags=re.IGNORECASE)
-            # Nettoyer H/F, F/H
+            raw_slug = match.group(2)
+            
+            # Enlever le suffixe ID (format: _COMPANY_RandomId comme _THALE_DxLJy4A)
+            raw_slug = re.sub(r'_[A-Z]{2,}_[A-Za-z0-9]+$', '', raw_slug)
+            
+            # Séparer par underscore : format typique {job-title}_{city}
+            parts = raw_slug.split('_')
+            
+            if len(parts) >= 2:
+                # La dernière partie est probablement la ville
+                potential_city = parts[-1].replace('-', ' ')
+                raw_title = '_'.join(parts[:-1])
+                job_data["location"] = potential_city.title()
+            else:
+                raw_title = parts[0]
+            
+            # Remplacer les tirets par des espaces
+            raw_title = raw_title.replace('-', ' ')
+            
+            # Nettoyer H/F, F/H (à la fin du titre)
             raw_title = re.sub(r'\s+[HhFf]\s*/?\s*[HhFf]\s*$', '', raw_title)
             raw_title = re.sub(r'\s+[HhFf]\s+[HhFf]\s*$', '', raw_title)
-            job_data["title"] = raw_title.strip().title()
+            
+            # Mettre en title case tout en préservant les acronymes courants
+            raw_title = raw_title.strip().title()
+            
+            # Restaurer les acronymes en majuscules
+            acronyms = ['Gcp', 'Aws', 'Bi', 'Ia', 'Ai', 'Ml', 'Nlp', 'Sql', 'Etl', 'Elt', 
+                        'Api', 'Cdi', 'Cdd', 'Dbt', 'Sap', 'Erp', 'Crm', 'Rh', 'Hr', 'It',
+                        'Qa', 'Qc', 'Devops', 'Mlops', 'Dataops', 'Finops', 'Llm']
+            for acr in acronyms:
+                raw_title = re.sub(rf'\b{acr}\b', acr.upper(), raw_title)
+            
+            job_data["title"] = raw_title
     
     # Titre du poste (si pas déjà trouvé)
     if not job_data["title"]:
