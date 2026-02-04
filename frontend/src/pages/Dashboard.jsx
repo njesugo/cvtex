@@ -104,9 +104,16 @@ function Dashboard() {
     }
   }
 
-  const handleDownload = async (url, filename) => {
+  const handleDownload = async (path, filename) => {
     try {
+      // Build full URL - path is like "/api/download/cv_xxx.pdf"
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api'
+      const baseUrl = API_BASE_URL.replace('/api', '')
+      const url = path.startsWith('http') ? path : `${baseUrl}${path}`
+      
       const response = await fetch(url)
+      if (!response.ok) throw new Error('Download failed')
+      
       const blob = await response.blob()
       const downloadUrl = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -119,6 +126,9 @@ function Dashboard() {
     } catch (err) {
       console.error('Download failed:', err)
       // Fallback to opening in new tab
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api'
+      const baseUrl = API_BASE_URL.replace('/api', '')
+      const url = path.startsWith('http') ? path : `${baseUrl}${path}`
       window.open(url, '_blank')
     }
   }

@@ -209,6 +209,15 @@ def list_applications():
     apps = get_applications()
     
     # Convert snake_case to camelCase for frontend compatibility
+    # Also convert storage URLs to backend download URLs for reliable access
+    def get_download_path(path):
+        """Extract filename from storage URL or return as-is"""
+        if path and 'supabase.co' in path:
+            # Extract just the filename from the full URL
+            filename = path.split('/')[-1]
+            return f"/api/download/{filename}"
+        return path
+    
     if supabase:
         return [{
             "id": app["id"],
@@ -222,8 +231,8 @@ def list_applications():
             "matchScore": app.get("match_score"),
             "description": app.get("description"),
             "url": app.get("url"),
-            "cvPath": app.get("cv_path"),
-            "coverPath": app.get("cover_path"),
+            "cvPath": get_download_path(app.get("cv_path")),
+            "coverPath": get_download_path(app.get("cover_path")),
             "logoUrl": app.get("logo_url"),
             "language": app.get("language", "fr")
         } for app in apps]
