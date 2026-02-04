@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { 
   Search,
-  Filter,
   LayoutGrid,
-  Download,
+  LayoutList,
   Plus,
   MapPin,
   ExternalLink,
@@ -21,7 +20,8 @@ import {
   TrendingUp,
   XOctagon,
   Trash2,
-  Eye
+  Eye,
+  Download
 } from 'lucide-react'
 import api from '../api'
 
@@ -48,6 +48,7 @@ function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedRows, setSelectedRows] = useState([])
   const [showActions, setShowActions] = useState(null)
+  const [viewMode, setViewMode] = useState('table') // 'table' or 'cards'
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -103,8 +104,37 @@ function Dashboard() {
     }
   }
 
-  const handleDownload = (url) => {
-    window.open(url, '_blank')
+  const handleDownload = async (url, filename) => {
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = filename || 'document.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (err) {
+      console.error('Download failed:', err)
+      // Fallback to opening in new tab
+      window.open(url, '_blank')
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette candidature ?')) {
+      return
+    }
+    try {
+      await api.deleteApplication(id)
+      setApplications(prev => prev.filter(app => app.id !== id))
+      setShowActions(null)
+    } catch (err) {
+      console.error('Delete failed:', err)
+      alert('Erreur lors de la suppression')
+    }
   }
 
   const formatDate = (dateStr) => {
@@ -163,10 +193,6 @@ function Dashboard() {
         <div className="dashboard-header">
           <h1 className="dashboard-title">Mes Candidatures</h1>
           <div className="dashboard-actions">
-            <button className="action-btn secondary">
-              <Download size={16} />
-              Export
-            </button>
             <Link to="/new" className="action-btn primary">
               <Plus size={16} />
               Nouvelle candidature
@@ -190,18 +216,24 @@ function Dashboard() {
             />
           </div>
           <div className="toolbar-actions">
-            <button className="toolbar-btn">
-              <Filter size={16} />
-              Filtrer
+            <button 
+              className={`toolbar-btn ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+              title="Vue tableau"
+            >
+              <LayoutList size={16} />
             </button>
-            <button className="toolbar-btn">
+            <button 
+              className={`toolbar-btn ${viewMode === 'cards' ? 'active' : ''}`}
+              onClick={() => setViewMode('cards')}
+              title="Vue cartes"
+            >
               <LayoutGrid size={16} />
-              Vue
             </button>
           </div>
         </div>
 
-        {/* Table */}
+        {/* Content */}
         <div className="table-container">
           {applications.length === 0 ? (
             <div className="empty-state">
@@ -215,7 +247,157 @@ function Dashboard() {
                 Nouvelle candidature
               </Link>
             </div>
+          ) : viewMode === 'cards' ? (
+            /* Cards View */
+            <>
+              <div className="cards-grid">
+                {paginatedApplications.map(app => {
+                  const status = statusConfig[app.status]
+                  return (
+                    <div key={app.id} className="application-card">
+                      <div className="card-header">
+                        <div className="card-company-info">
+                          {app.logoUrl ? (
+                            <img 
+                              src={app.logoUrl} 
+                              alt={app.company}
+                              className="card-logo"
+                              onError={(e) => {
+                                e.target.style.display = 'none'
+                                e.target.nextSibling.style.display = 'flex'
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className="card-avatar"
+                            style={{ display: app.logoUrl ? 'none' : 'flex' }}
+                          >
+                            {getInitials(app.company)}
+                          </div>
+                          <div className="card-company-details">
+                            <span className="card-company-name">{app.company}</span>
+                            <span className="card-location">
+                              <MapPin size={12} />
+                              {app.location}
+                            </span>
+                          </div>
+                        </div>
+                        <span className={`status-badge ${status.color}`}>
+                          {status.label}
+                        </span>
+                      </div>
+                      <div className="card-body">
+                        <h3 className="card-position">{app.position}</h3>
+                        <span className="card-type">{app.type}</span>
+                        <div className="card-match">
+                          <div className="match-bar">
+                            <div 
+                              className="match-fill" 
+                              style={{ width: `${app.matchScore}%` }}
+                            />
+                          </div>
+                          <span className="match-value">{app.matchScore}% match</span>
+                        </div>
+                      </div>
+                      <div className="card-footer">
+                        <span className="card-date">{formatDate(app.appliedDate)}</span>
+                        <div className="card-actions">
+                          <button 
+                            className="doc-btn cv"
+                            onClick={() => handleDownload(app.cvPath, `CV_${app.company}_${app.position}.pdf`)}
+                            title="Télécharger le CV"
+                          >
+                            <Download size={12} />
+                            CV
+                          </button>
+                          <button 
+                            className="doc-btn letter"
+                            onClick={() => handleDownload(app.coverPath, `LM_${app.company}_${app.position}.pdf`)}
+                            title="Télécharger la lettre"
+                          >
+                            <Download size={12} />
+                            LM
+                          </button>
+                          <a 
+                            href={app.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="action-icon"
+                            title="Voir l'offre"
+                          >
+                            <ExternalLink size={16} />
+                          </a>
+                          <button 
+                            className="action-icon danger"
+                            onClick={() => handleDelete(app.id)}
+                            title="Supprimer"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {/* Pagination for Cards */}
+              <div className="table-footer">
+                <div className="pagination-info">
+                  <span>Afficher</span>
+                  <select 
+                    className="page-size-select"
+                    value={itemsPerPage}
+                    disabled
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span>
+                    {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredApplications.length)} sur {filteredApplications.length}
+                  </span>
+                </div>
+                <div className="pagination-controls">
+                  <button 
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let pageNum
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                  <button 
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </>
           ) : (
+            /* Table View */
             <>
               <table className="data-table">
                 <thead>
@@ -292,14 +474,14 @@ function Dashboard() {
                           <div className="documents-cell">
                             <button 
                               className="doc-btn cv"
-                              onClick={() => handleDownload(app.cvPath)}
+                              onClick={() => handleDownload(app.cvPath, `CV_${app.company}_${app.position}.pdf`)}
                               title="Télécharger le CV"
                             >
                               CV
                             </button>
                             <button 
                               className="doc-btn letter"
-                              onClick={() => handleDownload(app.coverPath)}
+                              onClick={() => handleDownload(app.coverPath, `LM_${app.company}_${app.position}.pdf`)}
                               title="Télécharger la lettre"
                             >
                               LM
@@ -355,19 +537,22 @@ function Dashboard() {
                                 </a>
                                 <button 
                                   className="dropdown-item"
-                                  onClick={() => handleDownload(app.cvPath)}
+                                  onClick={() => handleDownload(app.cvPath, `CV_${app.company}_${app.position}.pdf`)}
                                 >
                                   <FileText size={14} />
                                   Télécharger CV
                                 </button>
                                 <button 
                                   className="dropdown-item"
-                                  onClick={() => handleDownload(app.coverPath)}
+                                  onClick={() => handleDownload(app.coverPath, `LM_${app.company}_${app.position}.pdf`)}
                                 >
                                   <FileText size={14} />
                                   Télécharger LM
                                 </button>
-                                <button className="dropdown-item danger">
+                                <button 
+                                  className="dropdown-item danger"
+                                  onClick={() => handleDelete(app.id)}
+                                >
                                   <Trash2 size={14} />
                                   Supprimer
                                 </button>
