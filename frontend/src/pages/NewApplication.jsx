@@ -76,6 +76,33 @@ function NewApplication() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
+  const handleDownload = async (path, filename) => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api'
+      const baseUrl = API_BASE_URL.replace('/api', '')
+      const url = path.startsWith('http') ? path : `${baseUrl}${path}`
+      
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Download failed')
+      
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = filename || 'document.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (err) {
+      console.error('Download failed:', err)
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api'
+      const baseUrl = API_BASE_URL.replace('/api', '')
+      const url = path.startsWith('http') ? path : `${baseUrl}${path}`
+      window.open(url, '_blank')
+    }
+  }
+
   return (
     <div className="new-application">
       {/* Header */}
@@ -243,7 +270,21 @@ function NewApplication() {
         <div>
           <div className="preview-card">
             <div className="preview-header">
-              <div className="detail-logo-placeholder">
+              {jobData.logoUrl ? (
+                <img 
+                  src={jobData.logoUrl} 
+                  alt={jobData.company}
+                  className="preview-company-logo"
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                    e.target.nextSibling.style.display = 'flex'
+                  }}
+                />
+              ) : null}
+              <div 
+                className="detail-logo-placeholder"
+                style={{ display: jobData.logoUrl ? 'none' : 'flex' }}
+              >
                 {getInitials(jobData.company)}
               </div>
               <div className="preview-info">
@@ -339,10 +380,8 @@ function NewApplication() {
           </p>
 
           <div className="download-grid">
-            <a 
-              href={generatedFiles.cv} 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <button 
+              onClick={() => handleDownload(generatedFiles.cv, `CV_${jobData?.company || 'document'}.pdf`)}
               className="download-card"
             >
               <div className="download-card-icon cv">
@@ -353,11 +392,9 @@ function NewApplication() {
                 <Download size={14} />
                 Télécharger
               </div>
-            </a>
-            <a 
-              href={generatedFiles.coverLetter} 
-              target="_blank"
-              rel="noopener noreferrer" 
+            </button>
+            <button 
+              onClick={() => handleDownload(generatedFiles.coverLetter, `LM_${jobData?.company || 'document'}.pdf`)}
               className="download-card"
             >
               <div className="download-card-icon letter">
@@ -368,7 +405,7 @@ function NewApplication() {
                 <Download size={14} />
                 Télécharger
               </div>
-            </a>
+            </button>
           </div>
 
           <div className="success-actions">

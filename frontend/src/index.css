@@ -1305,6 +1305,15 @@ body {
   font-size: 24px;
 }
 
+.preview-company-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  object-fit: contain;
+  background: #f9fafb;
+  padding: 4px;
+}
+
 .detail-title {
   font-size: 24px;
   font-weight: 700;
