@@ -340,7 +340,7 @@ function NewApplication() {
 
           <div className="download-grid">
             <a 
-              href={`http://localhost:8000${generatedFiles.cv}`} 
+              href={generatedFiles.cv} 
               target="_blank" 
               rel="noopener noreferrer"
               className="download-card"
@@ -355,7 +355,7 @@ function NewApplication() {
               </div>
             </a>
             <a 
-              href={`http://localhost:8000${generatedFiles.coverLetter}`} 
+              href={generatedFiles.coverLetter} 
               target="_blank"
               rel="noopener noreferrer" 
               className="download-card"
