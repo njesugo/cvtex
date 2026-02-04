@@ -274,7 +274,7 @@ function NewApplication() {
                 <img 
                   src={jobData.logoUrl} 
                   alt={jobData.company}
-                  className="preview-company-logo"
+                  className="preview-logo"
                   onError={(e) => {
                     e.target.style.display = 'none'
                     e.target.nextSibling.style.display = 'flex'

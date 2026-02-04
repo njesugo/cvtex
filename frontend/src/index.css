@@ -1292,6 +1292,15 @@ body {
   padding: 8px;
 }
 
+.preview-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  object-fit: contain;
+  background: #f9fafb;
+  padding: 4px;
+}
+
 .detail-logo-placeholder {
   width: 64px;
   height: 64px;
@@ -1303,15 +1312,6 @@ body {
   color: white;
   font-weight: 700;
   font-size: 24px;
-}
-
-.preview-company-logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  object-fit: contain;
-  background: #f9fafb;
-  padding: 4px;
 }
 
 .detail-title {
@@ -1807,11 +1807,13 @@ body {
   align-items: center;
   gap: 12px;
   padding: 24px;
+  background: white;
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
+  font-family: inherit;
 }
 
 .download-card:hover {
