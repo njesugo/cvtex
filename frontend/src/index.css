@@ -555,6 +555,16 @@ body {
   gap: 12px;
 }
 
+.company-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #f9fafb;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
 .company-avatar {
   width: 40px;
   height: 40px;

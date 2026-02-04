@@ -256,7 +256,21 @@ function Dashboard() {
                         </td>
                         <td className="td-position">
                           <div className="position-cell">
-                            <div className="company-avatar">
+                            {app.logoUrl ? (
+                              <img 
+                                src={app.logoUrl} 
+                                alt={app.company}
+                                className="company-logo"
+                                onError={(e) => {
+                                  e.target.style.display = 'none'
+                                  e.target.nextSibling.style.display = 'flex'
+                                }}
+                              />
+                            ) : null}
+                            <div 
+                              className="company-avatar"
+                              style={{ display: app.logoUrl ? 'none' : 'flex' }}
+                            >
                               {getInitials(app.company)}
                             </div>
                             <div className="position-info">
