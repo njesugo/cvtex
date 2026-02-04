@@ -1,42 +1,54 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { 
-  MapPin, 
-  DollarSign, 
-  CheckCircle2, 
-  Clock, 
-  XCircle,
-  Eye,
-  FileText,
-  Download,
   Search,
-  Calendar,
+  Filter,
+  LayoutGrid,
+  Download,
+  Plus,
+  MapPin,
+  ExternalLink,
+  FileText,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
+  XCircle,
   Sparkles,
-  Circle,
-  Loader2
+  Loader2,
+  Briefcase,
+  TrendingUp,
+  XOctagon,
+  Trash2,
+  Eye
 } from 'lucide-react'
 import api from '../api'
 
 const statusConfig = {
-  submitted: { label: 'Envoyée', icon: CheckCircle2 },
-  under_review: { label: 'En cours', icon: Clock },
-  shortlisted: { label: 'Présélectionné', icon: Sparkles },
-  rejected: { label: 'Refusée', icon: XCircle }
+  submitted: { label: 'Envoyée', color: 'green', icon: CheckCircle2 },
+  under_review: { label: 'En cours', color: 'yellow', icon: Clock },
+  shortlisted: { label: 'Présélectionné', color: 'blue', icon: Sparkles },
+  rejected: { label: 'Refusée', color: 'red', icon: XCircle }
 }
 
-const filters = [
-  { key: 'all', label: 'Toutes' },
-  { key: 'submitted', label: 'Envoyées' },
-  { key: 'under_review', label: 'En cours' },
-  { key: 'shortlisted', label: 'Présélectionnées' },
-  { key: 'rejected', label: 'Refusées' }
+const sidebarFilters = [
+  { key: 'all', label: 'Toutes les candidatures', icon: Briefcase },
+  { key: 'submitted', label: 'Envoyées', icon: CheckCircle2 },
+  { key: 'under_review', label: 'En cours', icon: Clock },
+  { key: 'shortlisted', label: 'Présélectionnées', icon: TrendingUp },
+  { key: 'rejected', label: 'Refusées', icon: XOctagon }
 ]
 
 function Dashboard() {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState('all')
-  const [selectedApp, setSelectedApp] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedRows, setSelectedRows] = useState([])
+  const [showActions, setShowActions] = useState(null)
+  const itemsPerPage = 10
 
   useEffect(() => {
     loadApplications()
@@ -46,9 +58,6 @@ function Dashboard() {
     try {
       const data = await api.getApplications()
       setApplications(data)
-      if (data.length > 0) {
-        setSelectedApp(data[0])
-      }
     } catch (err) {
       console.error('Failed to load applications:', err)
     } finally {
@@ -58,10 +67,18 @@ function Dashboard() {
 
   const filteredApplications = applications.filter(app => {
     const matchesFilter = activeFilter === 'all' || app.status === activeFilter
-    const matchesSearch = app.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         app.company.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = 
+      app.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.location.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesFilter && matchesSearch
   })
+
+  const totalPages = Math.ceil(filteredApplications.length / itemsPerPage)
+  const paginatedApplications = filteredApplications.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   const getFilterCount = (key) => {
     if (key === 'all') return applications.length
@@ -72,259 +89,351 @@ function Dashboard() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
-  const handleDownload = (path) => {
-    const filename = path.split('/').pop()
-    window.open(api.getDownloadUrl(filename), '_blank')
+  const toggleRowSelection = (id) => {
+    setSelectedRows(prev => 
+      prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
+    )
+  }
+
+  const toggleAllRows = () => {
+    if (selectedRows.length === paginatedApplications.length) {
+      setSelectedRows([])
+    } else {
+      setSelectedRows(paginatedApplications.map(a => a.id))
+    }
+  }
+
+  const handleDownload = (url) => {
+    window.open(url, '_blank')
+  }
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    })
   }
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-        <Loader2 size={32} className="animate-spin" style={{ color: '#10b981' }} />
+      <div className="dashboard-loading">
+        <Loader2 size={32} className="animate-spin" />
+        <span>Chargement...</span>
       </div>
     )
   }
 
   return (
-    <div className="dashboard-layout">
+    <div className="dashboard-container">
       {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-card">
-          <h2 className="sidebar-title">Candidatures</h2>
-          <nav className="sidebar-nav">
-            {filters.map(filter => (
-              <button
-                key={filter.key}
-                onClick={() => setActiveFilter(filter.key)}
-                className={`sidebar-item ${activeFilter === filter.key ? 'active' : ''}`}
-              >
-                <span>{filter.label}</span>
-                <span className="sidebar-count">{getFilterCount(filter.key)}</span>
-              </button>
-            ))}
+      <aside className="dashboard-sidebar">
+        <div className="sidebar-section">
+          <div className="sidebar-section-header">
+            <span>Candidatures</span>
+            <Link to="/new" className="sidebar-add-btn">+</Link>
+          </div>
+          <nav className="sidebar-filters">
+            {sidebarFilters.map(filter => {
+              const Icon = filter.icon
+              const count = getFilterCount(filter.key)
+              return (
+                <button
+                  key={filter.key}
+                  onClick={() => {
+                    setActiveFilter(filter.key)
+                    setCurrentPage(1)
+                  }}
+                  className={`sidebar-filter-item ${activeFilter === filter.key ? 'active' : ''}`}
+                >
+                  <Icon size={16} />
+                  <span className="filter-label">{filter.label}</span>
+                  <span className="filter-count">{count}</span>
+                </button>
+              )
+            })}
           </nav>
         </div>
       </aside>
 
-      {/* Content Area */}
-      <div className="content-area">
-        {/* Job List */}
-        <div className="job-list-container">
-          {/* Search */}
-          <div className="search-box">
-            <Search size={18} className="search-icon" />
+      {/* Main Content */}
+      <main className="dashboard-main">
+        {/* Header */}
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">Mes Candidatures</h1>
+          <div className="dashboard-actions">
+            <button className="action-btn secondary">
+              <Download size={16} />
+              Export
+            </button>
+            <Link to="/new" className="action-btn primary">
+              <Plus size={16} />
+              Nouvelle candidature
+            </Link>
+          </div>
+        </div>
+
+        {/* Toolbar */}
+        <div className="dashboard-toolbar">
+          <div className="search-container">
+            <Search size={16} className="search-icon" />
             <input
               type="text"
               placeholder="Rechercher..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="search-input"
             />
           </div>
-
-          {/* Applications */}
-          <div className="job-list">
-            {filteredApplications.map(app => {
-              const StatusIcon = statusConfig[app.status].icon
-              return (
-                <div
-                  key={app.id}
-                  onClick={() => setSelectedApp(app)}
-                  className={`job-card ${selectedApp?.id === app.id ? 'selected' : ''}`}
-                >
-                  <div className="job-card-header">
-                    <div className="company-logo-placeholder">
-                      {getInitials(app.company)}
-                    </div>
-                    <div className="job-card-info">
-                      <h3 className="job-title">{app.position}</h3>
-                      <p className="company-name">{app.company}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="job-tags">
-                    <span className="tag">
-                      <MapPin size={12} />
-                      {app.location}
-                    </span>
-                    <span className="tag">
-                      <DollarSign size={12} />
-                      {app.salary}
-                    </span>
-                    <span className="tag">{app.type}</span>
-                  </div>
-
-                  <div className="job-card-footer">
-                    <span className="job-date">
-                      <Calendar size={12} />
-                      {app.appliedDate}
-                    </span>
-                    <span className={`status-badge status-${app.status}`}>
-                      <StatusIcon size={12} />
-                      {statusConfig[app.status].label}
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
+          <div className="toolbar-actions">
+            <button className="toolbar-btn">
+              <Filter size={16} />
+              Filtrer
+            </button>
+            <button className="toolbar-btn">
+              <LayoutGrid size={16} />
+              Vue
+            </button>
           </div>
         </div>
 
-        {/* Detail Panel */}
-        {selectedApp && (
-          <div className="detail-panel">
-            <div className="detail-header">
-              <div className="detail-header-left">
-                <div className="detail-logo-placeholder">
-                  {getInitials(selectedApp.company)}
-                </div>
-                <div>
-                  <h1 className="detail-title">{selectedApp.position}</h1>
-                  <p className="detail-company">{selectedApp.company}</p>
-                </div>
+        {/* Table */}
+        <div className="table-container">
+          {applications.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">
+                <FileText size={40} />
               </div>
-              <div className="detail-header-right">
-                <a 
-                  href={selectedApp.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="btn-secondary"
-                >
-                  <Eye size={14} />
-                  Voir l'offre
-                </a>
-                <span className={`status-badge status-${selectedApp.status}`}>
-                  {statusConfig[selectedApp.status].label}
-                </span>
-              </div>
+              <h2>Aucune candidature</h2>
+              <p>Commencez par générer votre première candidature</p>
+              <Link to="/new" className="action-btn primary">
+                <Plus size={16} />
+                Nouvelle candidature
+              </Link>
             </div>
+          ) : (
+            <>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th className="th-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.length === paginatedApplications.length && paginatedApplications.length > 0}
+                        onChange={toggleAllRows}
+                        className="row-checkbox"
+                      />
+                    </th>
+                    <th>Poste</th>
+                    <th>Entreprise</th>
+                    <th>Localisation</th>
+                    <th>Documents</th>
+                    <th>Statut</th>
+                    <th>Match</th>
+                    <th>Date</th>
+                    <th className="th-actions"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedApplications.map(app => {
+                    const status = statusConfig[app.status]
+                    return (
+                      <tr 
+                        key={app.id} 
+                        className={selectedRows.includes(app.id) ? 'selected' : ''}
+                      >
+                        <td className="td-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.includes(app.id)}
+                            onChange={() => toggleRowSelection(app.id)}
+                            className="row-checkbox"
+                          />
+                        </td>
+                        <td className="td-position">
+                          <div className="position-cell">
+                            <div className="company-avatar">
+                              {getInitials(app.company)}
+                            </div>
+                            <div className="position-info">
+                              <span className="position-title">{app.position}</span>
+                              <span className="position-type">{app.type}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="td-company">
+                          <span className="company-name">{app.company}</span>
+                        </td>
+                        <td className="td-location">
+                          <div className="location-cell">
+                            <MapPin size={14} />
+                            <span>{app.location}</span>
+                          </div>
+                        </td>
+                        <td className="td-documents">
+                          <div className="documents-cell">
+                            <button 
+                              className="doc-btn cv"
+                              onClick={() => handleDownload(app.cvPath)}
+                              title="Télécharger le CV"
+                            >
+                              CV
+                            </button>
+                            <button 
+                              className="doc-btn letter"
+                              onClick={() => handleDownload(app.coverPath)}
+                              title="Télécharger la lettre"
+                            >
+                              LM
+                            </button>
+                          </div>
+                        </td>
+                        <td className="td-status">
+                          <span className={`status-badge ${status.color}`}>
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="td-match">
+                          <div className="match-cell">
+                            <div className="match-bar">
+                              <div 
+                                className="match-fill" 
+                                style={{ width: `${app.matchScore}%` }}
+                              />
+                            </div>
+                            <span className="match-value">{app.matchScore}%</span>
+                          </div>
+                        </td>
+                        <td className="td-date">
+                          <span className="date-text">{formatDate(app.appliedDate)}</span>
+                        </td>
+                        <td className="td-actions">
+                          <div className="actions-cell">
+                            <a 
+                              href={app.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="action-icon"
+                              title="Voir l'offre"
+                            >
+                              <ExternalLink size={16} />
+                            </a>
+                            <button 
+                              className="action-icon"
+                              onClick={() => setShowActions(showActions === app.id ? null : app.id)}
+                            >
+                              <MoreHorizontal size={16} />
+                            </button>
+                            {showActions === app.id && (
+                              <div className="actions-dropdown">
+                                <a 
+                                  href={app.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="dropdown-item"
+                                >
+                                  <Eye size={14} />
+                                  Voir l'offre
+                                </a>
+                                <button 
+                                  className="dropdown-item"
+                                  onClick={() => handleDownload(app.cvPath)}
+                                >
+                                  <FileText size={14} />
+                                  Télécharger CV
+                                </button>
+                                <button 
+                                  className="dropdown-item"
+                                  onClick={() => handleDownload(app.coverPath)}
+                                >
+                                  <FileText size={14} />
+                                  Télécharger LM
+                                </button>
+                                <button className="dropdown-item danger">
+                                  <Trash2 size={14} />
+                                  Supprimer
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
 
-            {/* Tags */}
-            <div className="detail-tags">
-              <span className="tag">
-                <MapPin size={12} />
-                {selectedApp.location}
-              </span>
-              <span className="tag">
-                <DollarSign size={12} />
-                {selectedApp.salary}
-              </span>
-              <span className="tag">{selectedApp.type}</span>
-              <span className="match-score">
-                <Sparkles size={14} />
-                {selectedApp.matchScore}% Match
-              </span>
-            </div>
-
-            {/* Timeline */}
-            <div className="timeline">
-              <div className="timeline-step">
-                <div className="timeline-icon completed">
-                  <CheckCircle2 size={16} />
+              {/* Pagination */}
+              <div className="table-footer">
+                <div className="pagination-info">
+                  <span>Afficher</span>
+                  <select 
+                    className="page-size-select"
+                    value={itemsPerPage}
+                    disabled
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span>
+                    {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredApplications.length)} sur {filteredApplications.length}
+                  </span>
                 </div>
-                <div className="timeline-text">
-                  <div className="label">Envoyée</div>
-                  <div className="date">{selectedApp.appliedDate}</div>
+                <div className="pagination-controls">
+                  <button 
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let pageNum
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                  <button 
+                    className="pagination-btn"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
                 </div>
               </div>
-              <div className={`timeline-line ${selectedApp.status !== 'submitted' ? 'completed' : 'pending'}`} />
-              <div className="timeline-step">
-                <div className={`timeline-icon ${selectedApp.status === 'under_review' || selectedApp.status === 'shortlisted' ? 'current' : 'pending'}`}>
-                  <Clock size={16} />
-                </div>
-                <div className="timeline-text">
-                  <div className="label">En cours</div>
-                </div>
-              </div>
-              <div className="timeline-line pending" />
-              <div className="timeline-step">
-                <div className="timeline-icon pending">
-                  <Circle size={16} />
-                </div>
-                <div className="timeline-text">
-                  <div className="label">Décision</div>
-                </div>
-              </div>
-            </div>
+            </>
+          )}
+        </div>
+      </main>
 
-            {/* Description */}
-            <div className="detail-section">
-              <h3 className="detail-section-title">Description</h3>
-              <p>{selectedApp.description}</p>
-            </div>
-
-            {/* Documents */}
-            <div className="detail-section">
-              <h3 className="detail-section-title">Documents générés</h3>
-              <div className="documents-grid">
-                <button 
-                  className="document-card"
-                  onClick={() => handleDownload(selectedApp.cvPath)}
-                >
-                  <div className="document-icon cv">
-                    <FileText size={20} />
-                  </div>
-                  <div className="document-info">
-                    <div className="document-name">CV</div>
-                    <div className="document-action">Télécharger PDF</div>
-                  </div>
-                  <Download size={16} className="document-download" />
-                </button>
-                <button 
-                  className="document-card"
-                  onClick={() => handleDownload(selectedApp.coverPath)}
-                >
-                  <div className="document-icon letter">
-                    <FileText size={20} />
-                  </div>
-                  <div className="document-info">
-                    <div className="document-name">Lettre</div>
-                    <div className="document-action">Télécharger PDF</div>
-                  </div>
-                  <Download size={16} className="document-download" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {applications.length === 0 && (
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'white',
-            borderRadius: '16px',
-            padding: '48px',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              background: '#dcfce7',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '24px'
-            }}>
-              <FileText size={32} style={{ color: '#10b981' }} />
-            </div>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
-              Aucune candidature
-            </h2>
-            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
-              Commencez par générer votre première candidature
-            </p>
-            <a href="/new" className="btn-primary">
-              <Sparkles size={16} />
-              Nouvelle candidature
-            </a>
-          </div>
-        )}
-      </div>
+      {/* Click outside handler for dropdown */}
+      {showActions && (
+        <div 
+          className="dropdown-overlay"
+          onClick={() => setShowActions(null)}
+        />
+      )}
     </div>
   )
 }
