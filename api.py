@@ -183,6 +183,12 @@ def upload_pdf(file_path: Path, storage_name: str) -> str:
         with open(file_path, 'rb') as f:
             pdf_content = f.read()
         
+        # Delete existing file first (for regeneration)
+        try:
+            supabase.storage.from_("documents").remove([storage_name])
+        except:
+            pass  # File might not exist, that's OK
+        
         # Upload to Supabase Storage
         result = supabase.storage.from_("documents").upload(
             storage_name,
@@ -808,6 +814,14 @@ def regenerate_documents(app_id: str, request: FinalizeRequest):
             "company": app.get("company", ""),
             "job_title": app.get("position", ""),
             "job_location": app.get("location", ""),
+            # Empty defaults for cover letter generation (not needed since we use edited content)
+            "job_keywords": [],
+            "job_context": {},
+            "job_description": "",
+            "accroches": [],
+            "qualites": [],
+            "projets_marquants": [],
+            # Edited cover letter content (takes priority)
             "cover_letter": {
                 "accroche": request.coverLetter.accroche,
                 "entreprise": request.coverLetter.entreprise,
