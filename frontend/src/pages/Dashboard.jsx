@@ -21,7 +21,11 @@ import {
   XOctagon,
   Trash2,
   Eye,
-  Download
+  Download,
+  Edit3,
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import api from '../api'
 
@@ -49,6 +53,11 @@ function Dashboard() {
   const [selectedRows, setSelectedRows] = useState([])
   const [showActions, setShowActions] = useState(null)
   const [viewMode, setViewMode] = useState('table') // 'table' or 'cards'
+  const [editModal, setEditModal] = useState(null) // { id, data }
+  const [editedCV, setEditedCV] = useState(null)
+  const [editedCover, setEditedCover] = useState(null)
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const [expandedSections, setExpandedSections] = useState({ cv: true, skills: false, projects: false, cover: true })
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -131,6 +140,51 @@ function Dashboard() {
       const url = path.startsWith('http') ? path : `${baseUrl}${path}`
       window.open(url, '_blank')
     }
+  }
+
+  const handleEdit = async (id) => {
+    try {
+      setShowActions(null)
+      const data = await api.getApplicationForEdit(id)
+      setEditModal({ id, data })
+      setEditedCV(data.cv)
+      setEditedCover(data.coverLetter)
+    } catch (err) {
+      console.error('Edit load failed:', err)
+      alert('Erreur lors du chargement des données')
+    }
+  }
+
+  const handleRegenerate = async () => {
+    if (!editModal || !editedCV || !editedCover) return
+    
+    setIsRegenerating(true)
+    try {
+      const result = await api.regenerateDocuments(editModal.id, editedCV, editedCover)
+      
+      // Update the application in the list with new paths
+      setApplications(prev => prev.map(app => 
+        app.id === editModal.id 
+          ? { ...app, cvPath: result.cvPath, coverPath: result.coverPath }
+          : app
+      ))
+      
+      setEditModal(null)
+      setEditedCV(null)
+      setEditedCover(null)
+      alert('Documents régénérés avec succès !')
+    } catch (err) {
+      console.error('Regenerate failed:', err)
+      alert('Erreur lors de la régénération: ' + err.message)
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
+  const closeEditModal = () => {
+    setEditModal(null)
+    setEditedCV(null)
+    setEditedCover(null)
   }
 
   const handleDelete = async (id) => {
@@ -337,6 +391,13 @@ function Dashboard() {
                           >
                             <ExternalLink size={16} />
                           </a>
+                          <button 
+                            className="action-icon"
+                            onClick={() => handleEdit(app.id)}
+                            title="Modifier les documents"
+                          >
+                            <Edit3 size={16} />
+                          </button>
                           <button 
                             className="action-icon danger"
                             onClick={() => handleDelete(app.id)}
@@ -560,6 +621,13 @@ function Dashboard() {
                                   Télécharger LM
                                 </button>
                                 <button 
+                                  className="dropdown-item"
+                                  onClick={() => handleEdit(app.id)}
+                                >
+                                  <Edit3 size={14} />
+                                  Modifier les documents
+                                </button>
+                                <button 
                                   className="dropdown-item danger"
                                   onClick={() => handleDelete(app.id)}
                                 >
@@ -642,6 +710,222 @@ function Dashboard() {
           className="dropdown-overlay"
           onClick={() => setShowActions(null)}
         />
+      )}
+
+      {/* Edit Modal */}
+      {editModal && editedCV && editedCover && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="modal-content edit-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <Edit3 size={20} />
+                Modifier les documents
+              </h2>
+              <button className="modal-close" onClick={closeEditModal}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <p className="edit-modal-subtitle">
+                {editModal.data.jobInfo.company} - {editModal.data.jobInfo.title}
+              </p>
+
+              {/* CV Section */}
+              <div className="edit-section">
+                <button 
+                  className="edit-section-header"
+                  onClick={() => setExpandedSections(prev => ({ ...prev, cv: !prev.cv }))}
+                >
+                  <span>📄 CV - Résumé et titre</span>
+                  {expandedSections.cv ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+                {expandedSections.cv && (
+                  <div className="edit-section-content">
+                    <div className="edit-field">
+                      <label>Titre affiché sur le CV</label>
+                      <input
+                        type="text"
+                        value={editedCV.display_title}
+                        onChange={(e) => setEditedCV(prev => ({ ...prev, display_title: e.target.value }))}
+                      />
+                    </div>
+                    <div className="edit-field">
+                      <label>Résumé professionnel</label>
+                      <textarea
+                        value={editedCV.summary}
+                        onChange={(e) => setEditedCV(prev => ({ ...prev, summary: e.target.value }))}
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Skills Section */}
+              <div className="edit-section">
+                <button 
+                  className="edit-section-header"
+                  onClick={() => setExpandedSections(prev => ({ ...prev, skills: !prev.skills }))}
+                >
+                  <span>🛠️ Compétences</span>
+                  {expandedSections.skills ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+                {expandedSections.skills && (
+                  <div className="edit-section-content">
+                    {editedCV.skills?.map((skill, idx) => (
+                      <div key={idx} className="edit-field skill-field">
+                        <label>{skill.label}</label>
+                        <input
+                          type="text"
+                          value={skill.items.join(', ')}
+                          onChange={(e) => {
+                            const newSkills = [...editedCV.skills]
+                            newSkills[idx] = { ...skill, items: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
+                            setEditedCV(prev => ({ ...prev, skills: newSkills }))
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Projects Section */}
+              <div className="edit-section">
+                <button 
+                  className="edit-section-header"
+                  onClick={() => setExpandedSections(prev => ({ ...prev, projects: !prev.projects }))}
+                >
+                  <span>🚀 Projets personnels</span>
+                  {expandedSections.projects ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+                {expandedSections.projects && (
+                  <div className="edit-section-content">
+                    {editedCV.projects?.map((project, idx) => (
+                      <div key={idx} className="project-edit-card">
+                        <div className="edit-field">
+                          <label>Nom du projet</label>
+                          <input
+                            type="text"
+                            value={project.name}
+                            onChange={(e) => {
+                              const newProjects = [...editedCV.projects]
+                              newProjects[idx] = { ...project, name: e.target.value }
+                              setEditedCV(prev => ({ ...prev, projects: newProjects }))
+                            }}
+                          />
+                        </div>
+                        <div className="edit-field">
+                          <label>Description</label>
+                          <textarea
+                            value={project.description}
+                            onChange={(e) => {
+                              const newProjects = [...editedCV.projects]
+                              newProjects[idx] = { ...project, description: e.target.value }
+                              setEditedCV(prev => ({ ...prev, projects: newProjects }))
+                            }}
+                            rows={2}
+                          />
+                        </div>
+                        <div className="edit-field">
+                          <label>Technologies</label>
+                          <input
+                            type="text"
+                            value={project.technologies}
+                            onChange={(e) => {
+                              const newProjects = [...editedCV.projects]
+                              newProjects[idx] = { ...project, technologies: e.target.value }
+                              setEditedCV(prev => ({ ...prev, projects: newProjects }))
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Cover Letter Section */}
+              <div className="edit-section">
+                <button 
+                  className="edit-section-header"
+                  onClick={() => setExpandedSections(prev => ({ ...prev, cover: !prev.cover }))}
+                >
+                  <span>✉️ Lettre de motivation</span>
+                  {expandedSections.cover ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+                {expandedSections.cover && (
+                  <div className="edit-section-content">
+                    <div className="edit-field">
+                      <label>Accroche</label>
+                      <textarea
+                        value={editedCover.accroche}
+                        onChange={(e) => setEditedCover(prev => ({ ...prev, accroche: e.target.value }))}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="edit-field">
+                      <label>L'entreprise</label>
+                      <textarea
+                        value={editedCover.entreprise}
+                        onChange={(e) => setEditedCover(prev => ({ ...prev, entreprise: e.target.value }))}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="edit-field">
+                      <label>Moi</label>
+                      <textarea
+                        value={editedCover.moi}
+                        onChange={(e) => setEditedCover(prev => ({ ...prev, moi: e.target.value }))}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="edit-field">
+                      <label>Nous</label>
+                      <textarea
+                        value={editedCover.nous}
+                        onChange={(e) => setEditedCover(prev => ({ ...prev, nous: e.target.value }))}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="edit-field">
+                      <label>Conclusion</label>
+                      <textarea
+                        value={editedCover.conclusion}
+                        onChange={(e) => setEditedCover(prev => ({ ...prev, conclusion: e.target.value }))}
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={closeEditModal}>
+                Annuler
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+              >
+                {isRegenerating ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Régénération...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    Régénérer les PDFs
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -91,6 +91,30 @@ export const api = {
     });
     if (!response.ok) throw new Error('Failed to update status');
     return response.json();
+  },
+
+  // Get application for editing
+  async getApplicationForEdit(id) {
+    const response = await fetch(`${API_BASE_URL}/applications/${id}/edit`);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to load application');
+    }
+    return response.json();
+  },
+
+  // Regenerate documents for existing application
+  async regenerateDocuments(id, cv, coverLetter) {
+    const response = await fetch(`${API_BASE_URL}/applications/${id}/regenerate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, cv, coverLetter })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to regenerate documents');
+    }
+    return response.json();
   }
 };
 

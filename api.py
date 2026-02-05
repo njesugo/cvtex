@@ -100,13 +100,41 @@ def save_application(application: dict):
             "cv_path": application.get("cvPath"),
             "cover_path": application.get("coverPath"),
             "logo_url": application.get("logoUrl"),
-            "language": application.get("language", "fr")
+            "language": application.get("language", "fr"),
+            "cv_data": application.get("cvData"),
+            "cover_data": application.get("coverData")
         }
         supabase.table("applications").insert(db_record).execute()
     else:
         applications = load_applications_local()
         applications.insert(0, application)
         save_applications_local(applications)
+
+def update_application(app_id: str, updates: dict):
+    """Update an existing application"""
+    if supabase:
+        supabase.table("applications").update(updates).eq("id", app_id).execute()
+    else:
+        applications = load_applications_local()
+        for app in applications:
+            if app["id"] == app_id:
+                app.update(updates)
+                break
+        save_applications_local(applications)
+
+def get_application_by_id(app_id: str) -> dict:
+    """Get a single application by ID"""
+    if supabase:
+        result = supabase.table("applications").select("*").eq("id", app_id).execute()
+        if result.data:
+            return result.data[0]
+        return None
+    else:
+        applications = load_applications_local()
+        for app in applications:
+            if app["id"] == app_id:
+                return app
+        return None
 
 def save_temp_analysis(temp_data: dict):
     """Save temporary analysis data"""
@@ -579,7 +607,22 @@ def finalize_documents(request: FinalizeRequest):
             cv_url = upload_pdf(cv_pdf_path, cv_filename)
             cover_url = upload_pdf(cover_pdf_path, cover_filename)
         
-        # Create application record
+        # Store CV and cover letter data for future editing
+        cv_data_to_store = {
+            "summary": request.cv.summary,
+            "display_title": request.cv.display_title,
+            "skills": [{"label": s.label, "items": s.items} for s in request.cv.skills],
+            "projects": [{"name": p.name, "description": p.description, "technologies": p.technologies} for p in request.cv.projects]
+        }
+        cover_data_to_store = {
+            "accroche": request.coverLetter.accroche,
+            "entreprise": request.coverLetter.entreprise,
+            "moi": request.coverLetter.moi,
+            "nous": request.coverLetter.nous,
+            "conclusion": request.coverLetter.conclusion
+        }
+        
+        # Create application record with editable data
         company_name = job_data.get('company', 'Unknown')
         application = {
             "id": request.id,
@@ -596,7 +639,9 @@ def finalize_documents(request: FinalizeRequest):
             "cvPath": cv_url if supabase else cv_filename,
             "coverPath": cover_url if supabase else cover_filename,
             "logoUrl": logo_url,
-            "language": language
+            "language": language,
+            "cvData": cv_data_to_store,
+            "coverData": cover_data_to_store
         }
         
         # Save application
@@ -669,6 +714,175 @@ def update_application_status(app_id: str, body: StatusUpdateRequest):
         save_applications_local(applications)
     
     return {"success": True}
+
+@app.get("/api/applications/{app_id}/edit")
+def get_application_for_edit(app_id: str):
+    """Get application data for editing"""
+    app = get_application_by_id(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Get stored CV and cover letter data
+    cv_data = app.get("cv_data") or app.get("cvData")
+    cover_data = app.get("cover_data") or app.get("coverData")
+    
+    # If no stored data, create defaults from profile
+    if not cv_data:
+        profile = load_profile_from_file()
+        language = app.get("language", "fr")
+        if language == "en":
+            profile = translate_profile_to_english(profile)
+        
+        cv_data = {
+            "summary": profile.get("summary", ""),
+            "display_title": app.get("position", ""),
+            "skills": profile.get("skills", []),
+            "projects": [
+                {
+                    "name": "DataFlow Pipeline",
+                    "description": "Pipeline de données temps réel avec Apache Kafka et Spark",
+                    "technologies": "Python, Kafka, Spark, Docker, AWS"
+                },
+                {
+                    "name": "ML Model Serving Platform",
+                    "description": "Plateforme de déploiement de modèles ML avec API REST",
+                    "technologies": "FastAPI, MLflow, Kubernetes, PostgreSQL"
+                }
+            ]
+        }
+    
+    if not cover_data:
+        company = app.get("company", "l'entreprise")
+        position = app.get("position", "le poste")
+        cover_data = {
+            "accroche": f"Fort de mon expérience, je suis particulièrement intéressé par le poste de {position} chez {company}.",
+            "entreprise": f"{company} est reconnue pour son expertise et son innovation.",
+            "moi": "Mon parcours m'a permis de développer des compétences solides en conception et développement.",
+            "nous": "Ensemble, nous pourrions relever les défis techniques et contribuer à la création de valeur.",
+            "conclusion": "Je serais ravi d'échanger avec vous lors d'un entretien. Dans l'attente de votre retour, je vous prie d'agréer mes salutations distinguées."
+        }
+    
+    return {
+        "id": app_id,
+        "cv": cv_data,
+        "coverLetter": cover_data,
+        "jobInfo": {
+            "title": app.get("position", ""),
+            "company": app.get("company", ""),
+            "location": app.get("location", ""),
+            "language": app.get("language", "fr")
+        }
+    }
+
+@app.post("/api/applications/{app_id}/regenerate")
+def regenerate_documents(app_id: str, request: FinalizeRequest):
+    """Regenerate documents for an existing application"""
+    try:
+        app = get_application_by_id(app_id)
+        if not app:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        language = app.get("language", "fr")
+        
+        # Load profile
+        profile = load_profile_from_file()
+        
+        # Translate profile if English
+        if language == "en":
+            profile = translate_profile_to_english(profile)
+        
+        # Create adapted data from request
+        adapted = {
+            "personal": profile.get("personal", {}),
+            "summary": request.cv.summary,
+            "display_title": request.cv.display_title,
+            "experiences": profile.get("experiences", []),
+            "education": profile.get("education", []),
+            "skills": [{"label": s.label, "items": s.items} for s in request.cv.skills],
+            "projects": [{"name": p.name, "description": p.description, "technologies": p.technologies} for p in request.cv.projects],
+            "certifications": profile.get("certifications", []),
+            "languages": profile.get("languages", []),
+            "interests": profile.get("interests", []),
+            "language": language,
+            "cover_letter": {
+                "accroche": request.coverLetter.accroche,
+                "entreprise": request.coverLetter.entreprise,
+                "moi": request.coverLetter.moi,
+                "nous": request.coverLetter.nous,
+                "conclusion": request.coverLetter.conclusion
+            }
+        }
+        
+        # Select bullets for experiences (use first 4 bullets per experience)
+        for exp in adapted["experiences"]:
+            exp["selected_bullets"] = exp.get("bullets", [])[:4]
+        
+        # Use temp directory for serverless compatibility
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            
+            # Generate CV
+            cv_filename = f"cv_{app_id}.pdf"
+            cv_tex_path = tmp_path / f"cv_{app_id}.tex"
+            generate_cv(adapted, cv_tex_path)
+            
+            # Compile CV to PDF
+            compile_latex(cv_tex_path)
+            cv_pdf_path = tmp_path / cv_filename
+            
+            # Generate cover letter
+            cover_filename = f"cover_{app_id}.pdf"
+            cover_tex_path = tmp_path / f"cover_{app_id}.tex"
+            generate_cover_letter(adapted, cover_tex_path, profile=profile)
+            
+            # Compile cover letter to PDF
+            compile_latex(cover_tex_path)
+            cover_pdf_path = tmp_path / cover_filename
+            
+            # Upload PDFs to storage (overwrite existing)
+            cv_url = upload_pdf(cv_pdf_path, cv_filename)
+            cover_url = upload_pdf(cover_pdf_path, cover_filename)
+        
+        # Store updated CV and cover letter data
+        cv_data_to_store = {
+            "summary": request.cv.summary,
+            "display_title": request.cv.display_title,
+            "skills": [{"label": s.label, "items": s.items} for s in request.cv.skills],
+            "projects": [{"name": p.name, "description": p.description, "technologies": p.technologies} for p in request.cv.projects]
+        }
+        cover_data_to_store = {
+            "accroche": request.coverLetter.accroche,
+            "entreprise": request.coverLetter.entreprise,
+            "moi": request.coverLetter.moi,
+            "nous": request.coverLetter.nous,
+            "conclusion": request.coverLetter.conclusion
+        }
+        
+        # Update application in database
+        update_data = {
+            "cv_path": cv_url if supabase else cv_filename,
+            "cover_path": cover_url if supabase else cover_filename,
+            "cv_data": cv_data_to_store,
+            "cover_data": cover_data_to_store
+        }
+        update_application(app_id, update_data)
+        
+        # Return paths via backend download endpoint
+        cv_download_path = f"/api/download/{cv_filename}"
+        cover_download_path = f"/api/download/{cover_filename}"
+        
+        return {
+            "success": True,
+            "cvPath": cv_download_path,
+            "coverPath": cover_download_path
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
