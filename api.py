@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
+from typing import List
 import os
 import json
 import uuid
@@ -201,9 +202,20 @@ class CoverLetterData(BaseModel):
     nous: str
     conclusion: str
 
+class SkillItem(BaseModel):
+    label: str
+    items: List[str]
+
+class ProjectItem(BaseModel):
+    name: str
+    description: str
+    technologies: str
+
 class CVData(BaseModel):
     summary: str
     display_title: str
+    skills: List[SkillItem]
+    projects: List[ProjectItem]
 
 class FinalizeRequest(BaseModel):
     id: str
@@ -359,21 +371,24 @@ def preview_documents(request: GenerateRequest):
         cv_data = {
             "summary": adapted.get("summary", ""),
             "display_title": adapted.get("display_title", ""),
-            "experiences": [
-                {
-                    "company": exp.get("company", ""),
-                    "title": exp.get("title", ""),
-                    "period": exp.get("period", ""),
-                    "bullets": exp.get("selected_bullets", exp.get("bullets", []))[:4]
-                }
-                for exp in adapted.get("experiences", [])[:4]
-            ],
             "skills": [
                 {
                     "label": skill.get("label", ""),
-                    "items": skill.get("items", [])[:6]
+                    "items": skill.get("items", [])[:8]
                 }
                 for skill in adapted.get("skills", [])[:6]
+            ],
+            "projects": [
+                {
+                    "name": "DataFlow Pipeline",
+                    "description": "Pipeline de données temps réel avec Apache Kafka et Spark pour le traitement de millions d'événements par jour",
+                    "technologies": "Python, Kafka, Spark, Docker, AWS"
+                },
+                {
+                    "name": "ML Model Serving Platform",
+                    "description": "Plateforme de déploiement de modèles ML avec API REST, monitoring et auto-scaling",
+                    "technologies": "FastAPI, MLflow, Kubernetes, PostgreSQL"
+                }
             ]
         }
         
@@ -515,6 +530,18 @@ def finalize_documents(request: FinalizeRequest):
         # Apply user edits to CV
         adapted["summary"] = request.cv.summary
         adapted["display_title"] = request.cv.display_title
+        
+        # Apply user edits to skills
+        adapted["skills"] = [
+            {"label": skill.label, "items": skill.items}
+            for skill in request.cv.skills
+        ]
+        
+        # Apply user edits to projects
+        adapted["projects"] = [
+            {"name": proj.name, "description": proj.description, "technologies": proj.technologies}
+            for proj in request.cv.projects
+        ]
         
         # Apply user edits to cover letter
         cover_letter_content = {

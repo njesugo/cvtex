@@ -32,7 +32,9 @@ function NewApplication() {
   const [editedCover, setEditedCover] = useState(null)
   const [expandedSections, setExpandedSections] = useState({
     cv: true,
-    coverLetter: true
+    skills: false,
+    projects: false,
+    cover: true
   })
 
   const handleGenerate = async () => {
@@ -445,6 +447,94 @@ function NewApplication() {
                     placeholder="Votre résumé professionnel adapté au poste..."
                   />
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Skills Section */}
+          <div className="edit-section">
+            <button 
+              className="edit-section-header"
+              onClick={() => setExpandedSections(prev => ({ ...prev, skills: !prev.skills }))}
+            >
+              <span>🛠️ Compétences</span>
+              {expandedSections.skills ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+            {expandedSections.skills && (
+              <div className="edit-section-content">
+                {editedCV.skills?.map((skill, idx) => (
+                  <div key={idx} className="edit-field skill-field">
+                    <label>{skill.label}</label>
+                    <input
+                      type="text"
+                      value={skill.items.join(', ')}
+                      onChange={(e) => {
+                        const newSkills = [...editedCV.skills]
+                        newSkills[idx] = { ...skill, items: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
+                        setEditedCV(prev => ({ ...prev, skills: newSkills }))
+                      }}
+                      placeholder="Compétences séparées par des virgules..."
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Projects Section */}
+          <div className="edit-section">
+            <button 
+              className="edit-section-header"
+              onClick={() => setExpandedSections(prev => ({ ...prev, projects: !prev.projects }))}
+            >
+              <span>🚀 Projets personnels</span>
+              {expandedSections.projects ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+            {expandedSections.projects && (
+              <div className="edit-section-content">
+                {editedCV.projects?.map((project, idx) => (
+                  <div key={idx} className="project-edit-card">
+                    <div className="edit-field">
+                      <label>Nom du projet</label>
+                      <input
+                        type="text"
+                        value={project.name}
+                        onChange={(e) => {
+                          const newProjects = [...editedCV.projects]
+                          newProjects[idx] = { ...project, name: e.target.value }
+                          setEditedCV(prev => ({ ...prev, projects: newProjects }))
+                        }}
+                        placeholder="Nom du projet..."
+                      />
+                    </div>
+                    <div className="edit-field">
+                      <label>Description</label>
+                      <textarea
+                        value={project.description}
+                        onChange={(e) => {
+                          const newProjects = [...editedCV.projects]
+                          newProjects[idx] = { ...project, description: e.target.value }
+                          setEditedCV(prev => ({ ...prev, projects: newProjects }))
+                        }}
+                        rows={2}
+                        placeholder="Courte description du projet..."
+                      />
+                    </div>
+                    <div className="edit-field">
+                      <label>Technologies</label>
+                      <input
+                        type="text"
+                        value={project.technologies}
+                        onChange={(e) => {
+                          const newProjects = [...editedCV.projects]
+                          newProjects[idx] = { ...project, technologies: e.target.value }
+                          setEditedCV(prev => ({ ...prev, projects: newProjects }))
+                        }}
+                        placeholder="Python, React, Docker..."
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

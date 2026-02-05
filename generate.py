@@ -1022,6 +1022,7 @@ def generate_cv(adapted: dict, output_path: Path) -> None:
             "experiences": "EXPÉRIENCES",
             "education": "FORMATIONS",
             "skills": "COMPÉTENCES",
+            "projects": "PROJETS PERSONNELS",
             "certifications": "CERTIFICATIONS",
             "languages": "LANGUES",
             "interests": "CENTRES D'INTÉRÊT",
@@ -1031,6 +1032,7 @@ def generate_cv(adapted: dict, output_path: Path) -> None:
             "experiences": "EXPERIENCE",
             "education": "EDUCATION",
             "skills": "SKILLS",
+            "projects": "PERSONAL PROJECTS",
             "certifications": "CERTIFICATIONS",
             "languages": "LANGUAGES",
             "interests": "INTERESTS",
@@ -1087,6 +1089,13 @@ def generate_cv(adapted: dict, output_path: Path) -> None:
     interests_tex = ""
     for interest in adapted["interests"]:
         interests_tex += f"\\certification{{\\small {interest}}}\n"
+    
+    # Projects section
+    projects_tex = ""
+    for proj in adapted.get("projects", []):
+        projects_tex += f"""\\noindent\\textbf{{{escape_latex(proj['name'])}}} \\hfill \\textcolor{{textgray}}{{\\small {escape_latex(proj.get('technologies', ''))}}}\\\\
+{{\\small {escape_latex(proj['description'])}}}\\\\[4pt]
+"""
     
     # Template CV
     cv_content = f"""\\documentclass[a4paper,10pt]{{article}}
@@ -1190,6 +1199,10 @@ def generate_cv(adapted: dict, output_path: Path) -> None:
 % COMPETENCES
 \\cvsection{{{t['skills']}}}
 {skills_tex}
+
+% PROJETS PERSONNELS
+{f"\\cvsection{{{t['projects']}}}" if projects_tex else ""}
+{projects_tex}
 
 % CERTIFICATIONS
 \\cvsection{{{t['certifications']}}}

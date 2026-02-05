@@ -2104,6 +2104,27 @@ body {
   min-height: 80px;
 }
 
+/* Project edit card */
+.project-edit-card {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.project-edit-card:last-child {
+  margin-bottom: 0;
+}
+
+/* Skill field styling */
+.skill-field {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
 /* ==================== RESPONSIVE MOBILE ==================== */
 
 /* Tablet */
