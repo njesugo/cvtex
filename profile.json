@@ -32,8 +32,7 @@
       "bullets": [
         "Maîtrise avancée de BigQuery : optimisation des requêtes, structuration des tables, gestion des coûts",
         "Infrastructure as Code avec Terraform pour automatiser les déploiements",
-        "Connaissance pratique de GCP et de ses services (Compute, Storage, Networking, Dataflow, Composer/Airflow, Vertex AI)",
-        "Conception et maintenance de pipelines de données robustes et scalables"
+        "Connaissance pratique de GCP et de ses services (Compute, Storage, Networking, Dataflow, Composer/Airflow, Vertex AI)"
       ],
       "priority": 1
     },
@@ -138,10 +137,10 @@
   ],
   "languages": [
     {"name": "Français", "level": "Langue Maternelle"},
-    {"name": "Anglais Écrit", "level": "Niveau Académique"},
-    {"name": "Anglais Conversationnel", "level": "Niveau Professionnel"}
+    {"name": "Anglais Écrit", "level": "Académique"},
+    {"name": "Anglais Conversationnel", "level": "Professionnel"}
   ],
-  "interests": ["Photo Pro (Sur mes temps morts)", "Arts", "Football"],
+  "interests": ["Photo Pro (Sur mes temps morts), Arts", "Football"],
   
   "accroches": [
     {
