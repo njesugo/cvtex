@@ -376,10 +376,14 @@ def generate_documents(request: GenerateRequest):
         # Clean temp analysis data
         delete_temp_analysis(request.id)
         
+        # Return paths via backend download endpoint (not direct Supabase URLs)
+        cv_download_path = f"/api/download/{cv_filename}"
+        cover_download_path = f"/api/download/{cover_filename}"
+        
         return {
             "success": True,
-            "cvPath": cv_url,
-            "coverPath": cover_url,
+            "cvPath": cv_download_path,
+            "coverPath": cover_download_path,
             "application": application
         }
         
