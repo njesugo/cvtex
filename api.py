@@ -804,6 +804,10 @@ def regenerate_documents(app_id: str, request: FinalizeRequest):
             "languages": profile.get("languages", []),
             "interests": profile.get("interests", []),
             "language": language,
+            # Job info needed for cover letter generation
+            "company": app.get("company", ""),
+            "job_title": app.get("position", ""),
+            "job_location": app.get("location", ""),
             "cover_letter": {
                 "accroche": request.coverLetter.accroche,
                 "entreprise": request.coverLetter.entreprise,
