@@ -641,29 +641,19 @@ def fetch_job_offer(url: str) -> dict:
             if len(parts) >= 2:
                 # La dernière partie est probablement la ville
                 potential_city = parts[-1].replace('-', ' ')
-                raw_title = '_'.join(parts[:-1])
                 job_data["location"] = potential_city.title()
-            else:
-                raw_title = parts[0]
-            
-            # Remplacer les tirets par des espaces
-            raw_title = raw_title.replace('-', ' ')
-            
-            # Nettoyer H/F, F/H (à la fin du titre)
-            raw_title = re.sub(r'\s+[HhFf]\s*/?\s*[HhFf]\s*$', '', raw_title)
-            raw_title = re.sub(r'\s+[HhFf]\s+[HhFf]\s*$', '', raw_title)
-            
-            # Mettre en title case tout en préservant les acronymes courants
-            raw_title = raw_title.strip().title()
-            
-            # Restaurer les acronymes en majuscules
-            acronyms = ['Gcp', 'Aws', 'Bi', 'Ia', 'Ai', 'Ml', 'Nlp', 'Sql', 'Etl', 'Elt', 
-                        'Api', 'Cdi', 'Cdd', 'Dbt', 'Sap', 'Erp', 'Crm', 'Rh', 'Hr', 'It',
-                        'Qa', 'Qc', 'Devops', 'Mlops', 'Dataops', 'Finops', 'Llm']
-            for acr in acronyms:
-                raw_title = re.sub(rf'\b{acr}\b', acr.upper(), raw_title)
-            
-            job_data["title"] = raw_title
+        
+        # Essayer d'abord d'obtenir le titre depuis le HTML (plus fiable)
+        title_elem = soup.select_one("h1")
+        if title_elem:
+            html_title = title_elem.get_text(strip=True)
+            # Nettoyer le titre HTML
+            # Supprimer tout après un tiret séparateur (ex: "- AI Teams (x/f/m)")
+            html_title = re.sub(r'\s*[-–—]\s+.*$', '', html_title)
+            # Supprimer les suffixes de genre entre parenthèses
+            html_title = re.sub(r'\s*[\(\[]\s*[xXhHfFmM]\s*/?\s*[xXhHfFmM]\s*/?\s*[xXhHfFmM]?\s*[\)\]]?\s*$', '', html_title)
+            html_title = re.sub(r'\s+[HhFf]\s*/?\s*[HhFf]\s*$', '', html_title)
+            job_data["title"] = html_title.strip()
     
     # Titre du poste (si pas déjà trouvé)
     if not job_data["title"]:
