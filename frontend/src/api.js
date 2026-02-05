@@ -42,6 +42,34 @@ export const api = {
     return response.json();
   },
 
+  // Preview documents for editing
+  async previewDocuments(id) {
+    const response = await fetch(`${API_BASE_URL}/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to preview documents');
+    }
+    return response.json();
+  },
+
+  // Finalize documents with edits
+  async finalizeDocuments(id, cv, coverLetter) {
+    const response = await fetch(`${API_BASE_URL}/finalize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, cv, coverLetter })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to finalize documents');
+    }
+    return response.json();
+  },
+
   // Download URL helper
   getDownloadUrl(path) {
     return `${API_BASE_URL}/download/${path}`;

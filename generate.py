@@ -1595,9 +1595,18 @@ def generate_cover_letter(adapted: dict, output_path: Path, profile: dict = None
         formule = t['formule_default']
     
     # ============================================
-    # UTILISER CONTENU MISTRAL SI DISPONIBLE
+    # UTILISER CONTENU ÉDITÉ OU MISTRAL SI DISPONIBLE
     # ============================================
-    if mistral_content:
+    # Priorité 1: Contenu édité par l'utilisateur
+    edited_content = adapted.get("cover_letter")
+    if edited_content:
+        accroche = edited_content.get("accroche", accroche)
+        para_entreprise = edited_content.get("entreprise", para_entreprise)
+        para_moi = edited_content.get("moi", para_moi)
+        para_nous = edited_content.get("nous", para_nous)
+        formule = edited_content.get("conclusion", formule)
+    # Priorité 2: Contenu généré par Mistral
+    elif mistral_content:
         accroche = mistral_content.get("accroche", accroche)
         para_entreprise = mistral_content.get("entreprise", para_entreprise)
         para_moi = mistral_content.get("moi", para_moi)

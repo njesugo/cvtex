@@ -2010,6 +2010,100 @@ body {
 .form-actions .btn-full {
   flex: 1;
 }
+
+/* Edit Form Styles */
+.edit-card {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.edit-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.edit-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.edit-section {
+  background: #f9fafb;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.edit-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: white;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  transition: background 0.2s;
+}
+
+.edit-section-header:hover {
+  background: #f3f4f6;
+}
+
+.edit-section-content {
+  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.edit-field {
+  margin-bottom: 16px;
+}
+
+.edit-field:last-child {
+  margin-bottom: 0;
+}
+
+.edit-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.edit-field input,
+.edit-field textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  resize: vertical;
+}
+
+.edit-field input:focus,
+.edit-field textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.edit-field textarea {
+  min-height: 80px;
+}
+
 /* ==================== RESPONSIVE MOBILE ==================== */
 
 /* Tablet */

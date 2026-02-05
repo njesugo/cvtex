@@ -21,7 +21,8 @@ from generate import (
     generate_cover_letter,
     compile_latex,
     translate_profile_to_english,
-    load_profile as load_profile_from_file
+    load_profile as load_profile_from_file,
+    generate_cover_with_mistral
 )
 
 # Supabase setup
@@ -193,6 +194,22 @@ class GenerateRequest(BaseModel):
 class StatusUpdateRequest(BaseModel):
     status: str
 
+class CoverLetterData(BaseModel):
+    accroche: str
+    entreprise: str
+    moi: str
+    nous: str
+    conclusion: str
+
+class CVData(BaseModel):
+    summary: str
+    display_title: str
+
+class FinalizeRequest(BaseModel):
+    id: str
+    cv: CVData
+    coverLetter: CoverLetterData
+
 # ============= API Endpoints =============
 
 @app.get("/api/health")
@@ -301,6 +318,84 @@ def analyze_job(request: JobUrlRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/preview")
+def preview_documents(request: GenerateRequest):
+    """Generate preview data for editing before final generation"""
+    try:
+        # Load temp data
+        temp_data = get_temp_analysis(request.id)
+        if not temp_data:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        job_data = temp_data['job_data']
+        language = job_data.get('language', 'fr')
+        
+        # Load profile
+        profile = load_profile_from_file()
+        
+        # Translate profile if English
+        if language == "en":
+            profile = translate_profile_to_english(profile)
+        
+        # Adapt profile to job
+        adapted = adapt_profile(profile, job_data)
+        
+        # Generate cover letter content with Mistral
+        cover_letter = generate_cover_with_mistral(profile, job_data, adapted.get("job_context", {}))
+        
+        # If Mistral failed, create default structure
+        if not cover_letter:
+            company = job_data.get("company", "l'entreprise")
+            position = job_data.get("title", "le poste")
+            cover_letter = {
+                "accroche": f"Fort de mon expérience en data engineering et développement, je suis particulièrement intéressé par le poste de {position} chez {company}.",
+                "entreprise": f"{company} est reconnue pour son expertise et son innovation. Votre vision et vos projets correspondent parfaitement à mes aspirations professionnelles.",
+                "moi": "Mon parcours m'a permis de développer des compétences solides en conception de pipelines de données, orchestration et déploiement cloud. J'ai notamment travaillé sur des projets d'envergure impliquant le traitement de données massives.",
+                "nous": "Ensemble, nous pourrions relever les défis de modernisation de vos infrastructures data et contribuer à la création de valeur à partir de vos données.",
+                "conclusion": "Je serais ravi d'échanger avec vous lors d'un entretien pour discuter de cette opportunité. Dans l'attente de votre retour, je vous prie d'agréer mes salutations distinguées."
+            }
+        
+        # Extract editable CV data
+        cv_data = {
+            "summary": adapted.get("summary", ""),
+            "display_title": adapted.get("display_title", ""),
+            "experiences": [
+                {
+                    "company": exp.get("company", ""),
+                    "title": exp.get("title", ""),
+                    "period": exp.get("period", ""),
+                    "bullets": exp.get("selected_bullets", exp.get("bullets", []))[:4]
+                }
+                for exp in adapted.get("experiences", [])[:4]
+            ],
+            "skills": [
+                {
+                    "label": skill.get("label", ""),
+                    "items": skill.get("items", [])[:6]
+                }
+                for skill in adapted.get("skills", [])[:6]
+            ]
+        }
+        
+        return {
+            "id": request.id,
+            "cv": cv_data,
+            "coverLetter": cover_letter,
+            "jobInfo": {
+                "title": job_data.get("title", ""),
+                "company": job_data.get("company", ""),
+                "location": job_data.get("location", ""),
+                "language": language
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/generate")
 def generate_documents(request: GenerateRequest):
     """Generate CV and cover letter"""
@@ -377,6 +472,113 @@ def generate_documents(request: GenerateRequest):
         delete_temp_analysis(request.id)
         
         # Return paths via backend download endpoint (not direct Supabase URLs)
+        cv_download_path = f"/api/download/{cv_filename}"
+        cover_download_path = f"/api/download/{cover_filename}"
+        
+        return {
+            "success": True,
+            "cvPath": cv_download_path,
+            "coverPath": cover_download_path,
+            "application": application
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/finalize")
+def finalize_documents(request: FinalizeRequest):
+    """Generate final PDFs with edited content"""
+    try:
+        # Load temp data
+        temp_data = get_temp_analysis(request.id)
+        if not temp_data:
+            raise HTTPException(status_code=404, detail="Application not found")
+        
+        job_data = temp_data['job_data']
+        language = job_data.get('language', 'fr')
+        logo_url = temp_data.get('logo_url')
+        
+        # Load profile
+        profile = load_profile_from_file()
+        
+        # Translate profile if English
+        if language == "en":
+            profile = translate_profile_to_english(profile)
+        
+        # Adapt profile to job
+        adapted = adapt_profile(profile, job_data)
+        
+        # Apply user edits to CV
+        adapted["summary"] = request.cv.summary
+        adapted["display_title"] = request.cv.display_title
+        
+        # Apply user edits to cover letter
+        cover_letter_content = {
+            "accroche": request.coverLetter.accroche,
+            "entreprise": request.coverLetter.entreprise,
+            "moi": request.coverLetter.moi,
+            "nous": request.coverLetter.nous,
+            "conclusion": request.coverLetter.conclusion
+        }
+        adapted["cover_letter"] = cover_letter_content
+        
+        # Use temp directory for serverless compatibility
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            
+            # Generate CV - writes to file
+            cv_filename = f"cv_{request.id}.pdf"
+            cv_tex_path = tmp_path / f"cv_{request.id}.tex"
+            generate_cv(adapted, cv_tex_path)
+            
+            # Compile CV to PDF
+            compile_latex(cv_tex_path)
+            cv_pdf_path = tmp_path / cv_filename
+            
+            # Generate cover letter with edited content
+            cover_filename = f"cover_{request.id}.pdf"
+            cover_tex_path = tmp_path / f"cover_{request.id}.tex"
+            generate_cover_letter(adapted, cover_tex_path, profile=profile)
+            
+            # Compile cover letter to PDF
+            compile_latex(cover_tex_path)
+            cover_pdf_path = tmp_path / cover_filename
+            
+            # Upload PDFs to storage
+            cv_url = upload_pdf(cv_pdf_path, cv_filename)
+            cover_url = upload_pdf(cover_pdf_path, cover_filename)
+        
+        # Create application record
+        company_name = job_data.get('company', 'Unknown')
+        application = {
+            "id": request.id,
+            "company": company_name,
+            "position": job_data.get('title', 'Unknown Position'),
+            "location": job_data.get('location', 'Remote'),
+            "salary": job_data.get('salary', 'Non spécifié'),
+            "type": job_data.get('contract_type', 'Full-time'),
+            "status": "submitted",
+            "appliedDate": datetime.now().strftime("%d %b %Y"),
+            "matchScore": temp_data['match_score'],
+            "description": job_data.get('description', '')[:300] if job_data.get('description') else '',
+            "url": temp_data['url'],
+            "cvPath": cv_url if supabase else cv_filename,
+            "coverPath": cover_url if supabase else cover_filename,
+            "logoUrl": logo_url,
+            "language": language
+        }
+        
+        # Save application
+        save_application(application)
+        
+        # Clean temp analysis data
+        delete_temp_analysis(request.id)
+        
+        # Return paths via backend download endpoint
         cv_download_path = f"/api/download/{cv_filename}"
         cover_download_path = f"/api/download/{cover_filename}"
         
