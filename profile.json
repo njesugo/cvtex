@@ -34,7 +34,6 @@
         "Infrastructure as Code avec Terraform pour automatiser les déploiements",
         "Connaissance pratique de GCP et de ses services (Compute, Storage, Networking, Dataflow, Composer/Airflow, Vertex AI)",
         "Conception et maintenance de pipelines de données robustes et scalables",
-        "Monitoring et alerting des flux de données en production"
       ],
       "priority": 1
     },
@@ -47,9 +46,7 @@
       "bullets": [
         "Piloté la gouvernance des données Accounting to Cash chez ADEO Service",
         "Collaborer avec plus de 15 parties prenantes (Data Owner, Process Métier, Product Owner) pour améliorer l'accessibilité et la compréhension aux données",
-        "Mis en place et suivi des contrôles de Data Quality (cohérence, doublons, valeurs manquantes/obsolètes) via la Data Quality Platform",
-        "Création de tableaux de suivi avec reporting régulier aux parties prenantes",
-        "Documentation et catalogage des assets data de l'entreprise"
+        "Mis en place et suivi des contrôles de Data Quality (cohérence, doublons, valeurs manquantes/obsolètes) via la Data Quality Platform",      
       ],
       "priority": 2
     }
