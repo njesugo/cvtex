@@ -1514,7 +1514,9 @@ def generate_cover_letter(adapted: dict, output_path: Path, profile: dict = None
         complements.append(t['ambitious_challenges'])
 
     # Joindre avec des connecteurs variés
-    if len(complements) == 1:
+    if len(complements) == 0:
+        para_entreprise = f"{intro_entreprise}."
+    elif len(complements) == 1:
         para_entreprise = f"{intro_entreprise}. {t['appreciate']} {complements[0]}."
     elif len(complements) == 2:
         para_entreprise = f"{intro_entreprise}. {t['appreciate']} {complements[0]}, {t['as_well_as']} {complements[1]}."
