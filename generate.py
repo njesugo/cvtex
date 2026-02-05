@@ -625,8 +625,10 @@ def fetch_job_offer(url: str) -> dict:
     
     # Détection spéciale Welcome to the Jungle
     if "welcometothejungle" in url:
-        # Extraire depuis l'URL: /companies/{company}/jobs/{job-title}_{city}_{COMPANY}_{id}
         import re
+        import json as json_module
+        
+        # Extraire depuis l'URL: /companies/{company}/jobs/{job-title}_{city}_{COMPANY}_{id}
         match = re.search(r'/companies/([^/]+)/jobs/([^/?]+)', url)
         if match:
             job_data["company"] = match.group(1).replace('-', ' ').title()
@@ -643,17 +645,66 @@ def fetch_job_offer(url: str) -> dict:
                 potential_city = parts[-1].replace('-', ' ')
                 job_data["location"] = potential_city.title()
         
-        # Essayer d'abord d'obtenir le titre depuis le HTML (plus fiable)
-        title_elem = soup.select_one("h1")
-        if title_elem:
-            html_title = title_elem.get_text(strip=True)
-            # Nettoyer le titre HTML
-            # Supprimer tout après un tiret séparateur (ex: "- AI Teams (x/f/m)")
-            html_title = re.sub(r'\s*[-–—]\s+.*$', '', html_title)
-            # Supprimer les suffixes de genre entre parenthèses
-            html_title = re.sub(r'\s*[\(\[]\s*[xXhHfFmM]\s*/?\s*[xXhHfFmM]\s*/?\s*[xXhHfFmM]?\s*[\)\]]?\s*$', '', html_title)
-            html_title = re.sub(r'\s+[HhFf]\s*/?\s*[HhFf]\s*$', '', html_title)
-            job_data["title"] = html_title.strip()
+        # Extraire les données JSON de window.__INITIAL_DATA__ (WTTJ utilise du JS)
+        json_match = re.search(r'window\.__INITIAL_DATA__\s*=\s*"(.+?)"(?:\s|;)', response.text)
+        if json_match:
+            try:
+                escaped_json = json_match.group(1)
+                # Decode the escaped JSON string
+                decoded = json_module.loads('"' + escaped_json + '"')
+                parsed_data = json_module.loads(decoded)
+                
+                # Chercher les données du job dans queries
+                for query in parsed_data.get('queries', []):
+                    state = query.get('state', {})
+                    data = state.get('data', {})
+                    if 'name' in data:
+                        # Titre du poste
+                        raw_title = data.get('name', '')
+                        # Nettoyer le titre
+                        raw_title = re.sub(r'\s*[-–—]\s+.*$', '', raw_title)
+                        raw_title = re.sub(r'\s*[\(\[]\s*[xXhHfFmM]\s*/?\s*[xXhHfFmM]\s*/?\s*[xXhHfFmM]?\s*[\)\]]?\s*$', '', raw_title)
+                        raw_title = re.sub(r'\s+[HhFf]\s*/?\s*[HhFf]\s*$', '', raw_title)
+                        job_data["title"] = raw_title.strip()
+                        
+                        # Description (enlever HTML)
+                        description = data.get('description', '')
+                        if description:
+                            desc_soup = BeautifulSoup(description, 'html.parser')
+                            job_data["description"] = desc_soup.get_text(separator='\n', strip=True)
+                        
+                        # Profil recherché
+                        profile = data.get('profile', '')
+                        if profile:
+                            profile_soup = BeautifulSoup(profile, 'html.parser')
+                            job_data["requirements"] = [li.get_text(strip=True) for li in profile_soup.find_all('li')]
+                        
+                        # Location depuis offices
+                        offices = data.get('offices', [])
+                        if offices and not job_data["location"]:
+                            job_data["location"] = offices[0].get('city', '')
+                        
+                        # Logo de l'organisation
+                        organization = data.get('organization', {})
+                        if organization:
+                            job_data["company"] = organization.get('name', job_data["company"])
+                            logo = organization.get('logo', {})
+                            if logo:
+                                job_data["logo_url"] = logo.get('url', '')
+                        
+                        break
+            except Exception as e:
+                print(f"⚠️ Erreur parsing JSON WTTJ: {e}")
+        
+        # Fallback: essayer le HTML si pas de données JSON
+        if not job_data["title"]:
+            title_elem = soup.select_one("h1")
+            if title_elem:
+                html_title = title_elem.get_text(strip=True)
+                html_title = re.sub(r'\s*[-–—]\s+.*$', '', html_title)
+                html_title = re.sub(r'\s*[\(\[]\s*[xXhHfFmM]\s*/?\s*[xXhHfFmM]\s*/?\s*[xXhHfFmM]?\s*[\)\]]?\s*$', '', html_title)
+                html_title = re.sub(r'\s+[HhFf]\s*/?\s*[HhFf]\s*$', '', html_title)
+                job_data["title"] = html_title.strip()
     
     # Titre du poste (si pas déjà trouvé)
     if not job_data["title"]:
