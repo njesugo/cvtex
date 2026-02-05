@@ -270,22 +270,25 @@ function NewApplication() {
         <div>
           <div className="preview-card">
             <div className="preview-header">
-              {jobData.logoUrl ? (
-                <img 
-                  src={jobData.logoUrl} 
-                  alt={jobData.company}
-                  className="preview-logo"
-                  onError={(e) => {
-                    e.target.style.display = 'none'
-                    e.target.nextSibling.style.display = 'flex'
-                  }}
-                />
-              ) : null}
-              <div 
-                className="detail-logo-placeholder"
-                style={{ display: jobData.logoUrl ? 'none' : 'flex' }}
-              >
-                {getInitials(jobData.company)}
+              <div className="preview-logo-container">
+                {jobData.logoUrl && (
+                  <img 
+                    src={jobData.logoUrl} 
+                    alt={jobData.company}
+                    className="preview-logo"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                      const placeholder = e.target.parentElement.querySelector('.detail-logo-placeholder')
+                      if (placeholder) placeholder.style.display = 'flex'
+                    }}
+                  />
+                )}
+                <div 
+                  className="detail-logo-placeholder"
+                  style={{ display: jobData.logoUrl ? 'none' : 'flex' }}
+                >
+                  {getInitials(jobData.company)}
+                </div>
               </div>
               <div className="preview-info">
                 <h2 className="preview-title">{jobData.title}</h2>

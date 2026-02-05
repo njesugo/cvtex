@@ -1292,6 +1292,13 @@ body {
   padding: 8px;
 }
 
+.preview-logo-container {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
 .preview-logo {
   width: 64px;
   height: 64px;
