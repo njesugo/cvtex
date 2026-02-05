@@ -25,22 +25,32 @@ import {
   Edit3,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Mail,
+  Calendar,
+  ThumbsUp,
+  MessageSquare
 } from 'lucide-react'
 import api from '../api'
 
 const statusConfig = {
-  submitted: { label: 'Envoyée', color: 'green', icon: CheckCircle2 },
+  submitted: { label: 'Envoyée', color: 'blue', icon: CheckCircle2 },
+  ack_received: { label: 'Accusé reçu', color: 'cyan', icon: Mail },
   under_review: { label: 'En cours', color: 'yellow', icon: Clock },
-  shortlisted: { label: 'Présélectionné', color: 'blue', icon: Sparkles },
+  interview_scheduled: { label: 'Entretien prévu', color: 'purple', icon: Calendar },
+  shortlisted: { label: 'Présélectionné', color: 'green', icon: ThumbsUp },
+  offer: { label: 'Offre reçue', color: 'emerald', icon: Sparkles },
   rejected: { label: 'Refusée', color: 'red', icon: XCircle }
 }
 
 const sidebarFilters = [
   { key: 'all', label: 'Toutes les candidatures', icon: Briefcase },
   { key: 'submitted', label: 'Envoyées', icon: CheckCircle2 },
+  { key: 'ack_received', label: 'Accusés reçus', icon: Mail },
   { key: 'under_review', label: 'En cours', icon: Clock },
+  { key: 'interview_scheduled', label: 'Entretiens', icon: Calendar },
   { key: 'shortlisted', label: 'Présélectionnées', icon: TrendingUp },
+  { key: 'offer', label: 'Offres', icon: Sparkles },
   { key: 'rejected', label: 'Refusées', icon: XOctagon }
 ]
 
@@ -58,6 +68,13 @@ function Dashboard() {
   const [editedCover, setEditedCover] = useState(null)
   const [isRegenerating, setIsRegenerating] = useState(false)
   const [expandedSections, setExpandedSections] = useState({ cv: true, skills: false, projects: false, cover: true })
+  // Email analysis modal
+  const [emailModal, setEmailModal] = useState(null) // { appId, company }
+  const [emailContent, setEmailContent] = useState('')
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisResult, setAnalysisResult] = useState(null)
+  // Status update modal
+  const [statusModal, setStatusModal] = useState(null) // { appId, currentStatus }
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -185,6 +202,87 @@ function Dashboard() {
     setEditModal(null)
     setEditedCV(null)
     setEditedCover(null)
+  }
+
+  // Email analysis functions
+  const openEmailModal = (appId, company) => {
+    setEmailModal({ appId, company })
+    setEmailContent('')
+    setAnalysisResult(null)
+    setShowActions(null)
+  }
+
+  const closeEmailModal = () => {
+    setEmailModal(null)
+    setEmailContent('')
+    setAnalysisResult(null)
+  }
+
+  const handleAnalyzeEmail = async () => {
+    if (!emailContent.trim() || !emailModal) return
+    
+    setIsAnalyzing(true)
+    try {
+      const result = await api.analyzeEmail(emailModal.appId, emailContent)
+      setAnalysisResult(result)
+    } catch (err) {
+      console.error('Analysis failed:', err)
+      alert('Erreur lors de l\'analyse: ' + err.message)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const handleApplyAnalysis = async () => {
+    if (!analysisResult || !emailModal) return
+    
+    try {
+      await api.updateApplicationFromEmail(emailModal.appId, {
+        status: analysisResult.suggestedStatus,
+        interviewDate: analysisResult.interviewDate,
+        recruiterName: analysisResult.recruiterName,
+        notes: analysisResult.notes
+      })
+      
+      // Update local state
+      setApplications(prev => prev.map(app => 
+        app.id === emailModal.appId 
+          ? { 
+              ...app, 
+              status: analysisResult.suggestedStatus,
+              interviewDate: analysisResult.interviewDate,
+              recruiterName: analysisResult.recruiterName
+            }
+          : app
+      ))
+      
+      closeEmailModal()
+      alert('Candidature mise à jour !')
+    } catch (err) {
+      console.error('Update failed:', err)
+      alert('Erreur lors de la mise à jour: ' + err.message)
+    }
+  }
+
+  // Manual status update
+  const openStatusModal = (appId, currentStatus) => {
+    setStatusModal({ appId, currentStatus })
+    setShowActions(null)
+  }
+
+  const handleStatusChange = async (newStatus) => {
+    if (!statusModal) return
+    
+    try {
+      await api.updateStatus(statusModal.appId, newStatus)
+      setApplications(prev => prev.map(app => 
+        app.id === statusModal.appId ? { ...app, status: newStatus } : app
+      ))
+      setStatusModal(null)
+    } catch (err) {
+      console.error('Status update failed:', err)
+      alert('Erreur lors de la mise à jour du statut')
+    }
   }
 
   const handleDelete = async (id) => {
@@ -627,6 +725,22 @@ function Dashboard() {
                                   <Edit3 size={14} />
                                   Modifier les documents
                                 </button>
+                                <div className="dropdown-divider" />
+                                <button 
+                                  className="dropdown-item"
+                                  onClick={() => openEmailModal(app.id, app.company)}
+                                >
+                                  <Mail size={14} />
+                                  Analyser un email
+                                </button>
+                                <button 
+                                  className="dropdown-item"
+                                  onClick={() => openStatusModal(app.id, app.status)}
+                                >
+                                  <MessageSquare size={14} />
+                                  Changer le statut
+                                </button>
+                                <div className="dropdown-divider" />
                                 <button 
                                   className="dropdown-item danger"
                                   onClick={() => handleDelete(app.id)}
@@ -923,6 +1037,146 @@ function Dashboard() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Analysis Modal */}
+      {emailModal && (
+        <div className="modal-overlay" onClick={closeEmailModal}>
+          <div className="modal-content email-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <Mail size={20} />
+                Analyser un email
+              </h2>
+              <button className="modal-close" onClick={closeEmailModal}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <p className="modal-subtitle">
+                Collez le contenu de l'email reçu de <strong>{emailModal.company}</strong>
+              </p>
+              
+              <div className="email-input-section">
+                <textarea
+                  className="email-textarea"
+                  value={emailContent}
+                  onChange={(e) => setEmailContent(e.target.value)}
+                  placeholder="Collez ici le contenu de l'email du recruteur..."
+                  rows={10}
+                />
+                
+                <button 
+                  className="btn-primary analyze-btn"
+                  onClick={handleAnalyzeEmail}
+                  disabled={isAnalyzing || !emailContent.trim()}
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Analyse en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} />
+                      Analyser avec l'IA
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {analysisResult && (
+                <div className="analysis-result">
+                  <h3>Résultat de l'analyse</h3>
+                  
+                  <div className="analysis-item">
+                    <span className="analysis-label">Type d'email :</span>
+                    <span className="analysis-value">{analysisResult.emailType}</span>
+                  </div>
+                  
+                  <div className="analysis-item">
+                    <span className="analysis-label">Nouveau statut suggéré :</span>
+                    <span className={`status-badge ${statusConfig[analysisResult.suggestedStatus]?.color || 'gray'}`}>
+                      {statusConfig[analysisResult.suggestedStatus]?.label || analysisResult.suggestedStatus}
+                    </span>
+                  </div>
+                  
+                  {analysisResult.interviewDate && (
+                    <div className="analysis-item">
+                      <span className="analysis-label">Date d'entretien :</span>
+                      <span className="analysis-value">{analysisResult.interviewDate}</span>
+                    </div>
+                  )}
+                  
+                  {analysisResult.recruiterName && (
+                    <div className="analysis-item">
+                      <span className="analysis-label">Recruteur :</span>
+                      <span className="analysis-value">{analysisResult.recruiterName}</span>
+                    </div>
+                  )}
+                  
+                  {analysisResult.notes && (
+                    <div className="analysis-item">
+                      <span className="analysis-label">Notes :</span>
+                      <span className="analysis-value">{analysisResult.notes}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={closeEmailModal}>
+                Annuler
+              </button>
+              {analysisResult && (
+                <button className="btn-primary" onClick={handleApplyAnalysis}>
+                  <CheckCircle2 size={16} />
+                  Appliquer les modifications
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Update Modal */}
+      {statusModal && (
+        <div className="modal-overlay" onClick={() => setStatusModal(null)}>
+          <div className="modal-content status-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <MessageSquare size={20} />
+                Changer le statut
+              </h2>
+              <button className="modal-close" onClick={() => setStatusModal(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="status-options">
+                {Object.entries(statusConfig).map(([key, config]) => {
+                  const Icon = config.icon
+                  return (
+                    <button
+                      key={key}
+                      className={`status-option ${statusModal.currentStatus === key ? 'current' : ''}`}
+                      onClick={() => handleStatusChange(key)}
+                    >
+                      <Icon size={18} />
+                      <span>{config.label}</span>
+                      {statusModal.currentStatus === key && (
+                        <span className="current-badge">Actuel</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>

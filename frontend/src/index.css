@@ -2244,6 +2244,152 @@ body {
   transform: none;
 }
 
+/* Email Modal */
+.email-modal {
+  max-width: 600px;
+}
+
+.modal-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.email-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.email-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 200px;
+}
+
+.email-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.analyze-btn {
+  align-self: flex-end;
+}
+
+.analysis-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+}
+
+.analysis-result h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 12px;
+}
+
+.analysis-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.analysis-item:last-child {
+  margin-bottom: 0;
+}
+
+.analysis-label {
+  font-size: 13px;
+  color: #6b7280;
+  min-width: 140px;
+}
+
+.analysis-value {
+  font-size: 13px;
+  color: #111827;
+  font-weight: 500;
+}
+
+/* Status Modal */
+.status-modal {
+  max-width: 400px;
+}
+
+.status-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.status-option:hover {
+  border-color: #667eea;
+  background: #f5f3ff;
+}
+
+.status-option.current {
+  border-color: #667eea;
+  background: #ede9fe;
+}
+
+.status-option span {
+  font-size: 14px;
+  color: #374151;
+}
+
+.current-badge {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #667eea;
+  color: white;
+  border-radius: 10px;
+}
+
+/* Dropdown divider */
+.dropdown-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 4px 0;
+}
+
+/* New status badge colors */
+.status-badge.cyan {
+  background: #e0f7fa;
+  color: #00838f;
+}
+
+.status-badge.purple {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.status-badge.emerald {
+  background: #d1fae5;
+  color: #047857;
+}
+
 /* ==================== RESPONSIVE MOBILE ==================== */
 
 /* Tablet */

@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import os
 import json
 import uuid
@@ -901,6 +901,206 @@ def regenerate_documents(app_id: str, request: FinalizeRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+# ============= Email Analysis Endpoints =============
+
+class EmailAnalysisRequest(BaseModel):
+    content: str
+
+class EmailUpdateRequest(BaseModel):
+    status: str
+    interviewDate: str = None
+    recruiterName: str = None
+    notes: str = None
+
+def analyze_email_with_mistral(email_content: str, company: str) -> dict:
+    """Analyze email content using Mistral AI"""
+    mistral_api_key = os.getenv("MISTRAL_API_KEY")
+    if not mistral_api_key:
+        # Fallback to simple keyword analysis
+        return analyze_email_simple(email_content)
+    
+    try:
+        from mistralai import Mistral
+        client = Mistral(api_key=mistral_api_key)
+        
+        prompt = f"""Analyse cet email de recruteur et retourne un JSON avec les informations suivantes:
+- emailType: "acknowledgment" (accusé réception), "rejection" (refus), "interview" (proposition d'entretien), "offer" (offre d'embauche), "followup" (relance/suivi), "unknown"
+- suggestedStatus: "ack_received", "rejected", "interview_scheduled", "offer", ou "under_review"
+- interviewDate: date et heure de l'entretien si mentionné (format "DD/MM/YYYY HH:MM" ou null)
+- recruiterName: nom du recruteur si mentionné (ou null)
+- notes: résumé court de l'email (1-2 phrases)
+
+Entreprise: {company}
+
+Email:
+{email_content}
+
+Réponds UNIQUEMENT avec le JSON, sans markdown ni explication."""
+
+        response = client.chat.complete(
+            model="mistral-small-latest",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        result_text = response.choices[0].message.content.strip()
+        # Clean up potential markdown
+        if result_text.startswith("```"):
+            result_text = result_text.split("```")[1]
+            if result_text.startswith("json"):
+                result_text = result_text[4:]
+        
+        return json.loads(result_text)
+    except Exception as e:
+        print(f"Mistral analysis failed: {e}")
+        return analyze_email_simple(email_content)
+
+def analyze_email_simple(email_content: str) -> dict:
+    """Simple keyword-based email analysis fallback"""
+    content_lower = email_content.lower()
+    
+    # Detect email type
+    if any(word in content_lower for word in ["entretien", "interview", "rencontrer", "meet", "appel", "call", "visio"]):
+        return {
+            "emailType": "Proposition d'entretien",
+            "suggestedStatus": "interview_scheduled",
+            "interviewDate": None,
+            "recruiterName": None,
+            "notes": "Email suggérant un entretien détecté"
+        }
+    elif any(word in content_lower for word in ["refus", "reject", "malheureusement", "unfortunately", "pas retenu", "not selected"]):
+        return {
+            "emailType": "Refus",
+            "suggestedStatus": "rejected",
+            "interviewDate": None,
+            "recruiterName": None,
+            "notes": "Email de refus détecté"
+        }
+    elif any(word in content_lower for word in ["offre", "offer", "proposition", "salaire", "salary", "contrat", "contract"]):
+        return {
+            "emailType": "Offre d'embauche",
+            "suggestedStatus": "offer",
+            "interviewDate": None,
+            "recruiterName": None,
+            "notes": "Email d'offre détecté"
+        }
+    elif any(word in content_lower for word in ["bien reçu", "received", "accusé", "acknowledge", "prise en compte", "confirmons"]):
+        return {
+            "emailType": "Accusé de réception",
+            "suggestedStatus": "ack_received",
+            "interviewDate": None,
+            "recruiterName": None,
+            "notes": "Accusé de réception détecté"
+        }
+    else:
+        return {
+            "emailType": "Email de suivi",
+            "suggestedStatus": "under_review",
+            "interviewDate": None,
+            "recruiterName": None,
+            "notes": "Type d'email non déterminé avec certitude"
+        }
+
+@app.post("/api/applications/{app_id}/analyze-email")
+def analyze_email(app_id: str, request: EmailAnalysisRequest):
+    """Analyze an email to determine application status update"""
+    app = get_application_by_id(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    company = app.get("company", "Unknown")
+    result = analyze_email_with_mistral(request.content, company)
+    
+    return result
+
+@app.patch("/api/applications/{app_id}/update-from-email")
+def update_from_email(app_id: str, request: EmailUpdateRequest):
+    """Update application based on email analysis"""
+    app = get_application_by_id(app_id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    update_data = {"status": request.status}
+    
+    if request.interviewDate:
+        update_data["interview_date"] = request.interviewDate
+    if request.recruiterName:
+        update_data["recruiter_name"] = request.recruiterName
+    if request.notes:
+        # Append to existing notes
+        existing_notes = app.get("notes", "") or ""
+        new_notes = f"{existing_notes}\n[{datetime.now().strftime('%d/%m/%Y')}] {request.notes}" if existing_notes else f"[{datetime.now().strftime('%d/%m/%Y')}] {request.notes}"
+        update_data["notes"] = new_notes.strip()
+    
+    update_application(app_id, update_data)
+    
+    return {"success": True}
+
+# CloudMailin Inbound Webhook
+@app.post("/api/inbound")
+async def receive_inbound_email(
+    from_: str = Form(None, alias="from"),
+    to: str = Form(None),
+    subject: str = Form(None),
+    plain: str = Form(None),
+    html: str = Form(None)
+):
+    """Receive inbound emails from CloudMailin webhook"""
+    try:
+        email_content = plain or html or ""
+        sender = from_ or ""
+        
+        if not email_content:
+            return {"status": "ignored", "reason": "empty content"}
+        
+        # Try to match with an application
+        # Strategy 1: Match by sender domain
+        sender_domain = sender.split("@")[-1].lower() if "@" in sender else ""
+        
+        apps = get_applications()
+        matched_app = None
+        
+        for app in apps:
+            company = (app.get("company") or "").lower()
+            # Check if sender domain contains company name or vice versa
+            if sender_domain and (company in sender_domain or any(word in sender_domain for word in company.split())):
+                matched_app = app
+                break
+            # Check subject for company name
+            if subject and company in subject.lower():
+                matched_app = app
+                break
+        
+        if not matched_app:
+            return {"status": "ignored", "reason": "no matching application found"}
+        
+        # Analyze the email
+        result = analyze_email_with_mistral(email_content, matched_app.get("company", ""))
+        
+        # Auto-update the application
+        update_data = {"status": result["suggestedStatus"]}
+        if result.get("interviewDate"):
+            update_data["interview_date"] = result["interviewDate"]
+        if result.get("recruiterName"):
+            update_data["recruiter_name"] = result["recruiterName"]
+        if result.get("notes"):
+            existing_notes = matched_app.get("notes", "") or ""
+            new_note = f"[{datetime.now().strftime('%d/%m/%Y')} - Auto] {result['notes']}"
+            update_data["notes"] = f"{existing_notes}\n{new_note}".strip()
+        
+        update_application(matched_app["id"], update_data)
+        
+        return {
+            "status": "processed",
+            "application_id": matched_app["id"],
+            "company": matched_app.get("company"),
+            "new_status": result["suggestedStatus"]
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

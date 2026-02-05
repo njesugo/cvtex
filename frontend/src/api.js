@@ -115,6 +115,34 @@ export const api = {
       throw new Error(error.detail || 'Failed to regenerate documents');
     }
     return response.json();
+  },
+
+  // Analyze email content with AI
+  async analyzeEmail(appId, emailContent) {
+    const response = await fetch(`${API_BASE_URL}/applications/${appId}/analyze-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: emailContent })
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to analyze email');
+    }
+    return response.json();
+  },
+
+  // Update application from email analysis
+  async updateApplicationFromEmail(appId, data) {
+    const response = await fetch(`${API_BASE_URL}/applications/${appId}/update-from-email`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to update application');
+    }
+    return response.json();
   }
 };
 
